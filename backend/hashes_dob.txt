@@ -1,0 +1,3 @@
+KAVI:$2b$10$OpwwzCD5MsCzjZWrmKDv1.DpZLUIOkSp1CqFGfqnOFv4qVmMz0DzG
+ABI:$2b$10$Xm8a2rRYmYUh7SDqtotWyuGZ7sozp00E10xmCtnv.mK9UXwtMuzj6
+RAM:$2b$10$Bc7pi4ps.t6No1JUhExugOeH4j0mrOB2CcHuOscjIoWX92U.KnH8i
