@@ -6,7 +6,10 @@ const AttendanceManager = () => {
     const [message, setMessage] = useState('');
 
     // Form States
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const today = new Date().toISOString().split('T')[0];
+    const [markDate] = useState(today); // Locked to today
+    const [reportDate, setReportDate] = useState(today); // Flexible for reports
+
     const [period, setPeriod] = useState('1');
     const [periodSubject, setPeriodSubject] = useState('');
     const [department, setDepartment] = useState('BCA');
@@ -15,22 +18,35 @@ const AttendanceManager = () => {
 
     // Data
     const [students, setStudents] = useState([]);
+    const [isTaken, setIsTaken] = useState(false);
     const [reportData, setReportData] = useState([]);
 
     const token = localStorage.getItem('token');
 
-    // Fetch Students for Marking
+    // Fetch Students for Marking (Check transparency)
     const fetchStudents = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/attendance/students?department=${department}&year=${year}&section=${section}`, {
+            const res = await fetch(`http://localhost:5000/api/attendance/students?department=${department}&year=${year}&section=${section}&date=${markDate}&period=${period}`, {
                 headers: { 'x-auth-token': token }
             });
             const data = await res.json();
-            // Add status 'Present' by default
-            setStudents(data.map(s => ({ ...s, status: 'Present' })));
+
+            // Backend returns { students: [], isTaken: boolean }
+            setIsTaken(data.isTaken);
+            if (data.isTaken) {
+                setMessage(`Attendance for Period ${period} is already submitted.`);
+                // Use existing statuses
+                setStudents(data.students);
+            } else {
+                setMessage('');
+                // If not taken, set default check to Present
+                setStudents(data.students.map(s => ({ ...s, status: 'Present' })));
+            }
+
         } catch (err) {
             console.error(err);
+            setMessage('Error fetching student list');
         } finally {
             setLoading(false);
         }
@@ -38,6 +54,7 @@ const AttendanceManager = () => {
 
     // Toggle Attendance Status
     const toggleStatus = (id) => {
+        if (isTaken) return; // Prevent editing if already taken
         setStudents(students.map(s =>
             s.id === id ? { ...s, status: s.status === 'Present' ? 'Absent' : 'Present' } : s
         ));
@@ -45,6 +62,8 @@ const AttendanceManager = () => {
 
     // Submit Attendance
     const handleSubmit = async () => {
+        if (isTaken) return; // double check
+
         if (!periodSubject) {
             setMessage('Please enter a subject.');
             return;
@@ -52,7 +71,7 @@ const AttendanceManager = () => {
         setLoading(true);
         try {
             const payload = {
-                date,
+                date: markDate,
                 period,
                 subject: periodSubject,
                 department,
@@ -72,7 +91,7 @@ const AttendanceManager = () => {
 
             const data = await res.json();
             setMessage(data.message);
-            setTimeout(() => setMessage(''), 3000);
+            setIsTaken(true); // Lock it after successful submit
         } catch (err) {
             setMessage('Error marking attendance');
         } finally {
@@ -84,7 +103,7 @@ const AttendanceManager = () => {
     const fetchReport = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/attendance/daily-report?date=${date}&department=${department}&year=${year}&section=${section}`, {
+            const res = await fetch(`http://localhost:5000/api/attendance/daily-report?date=${reportDate}&department=${department}&year=${year}&section=${section}`, {
                 headers: { 'x-auth-token': token }
             });
             const data = await res.json();
@@ -117,8 +136,21 @@ const AttendanceManager = () => {
             {/* Filters / Controls */}
             <div className="controls card">
                 <div className="control-group">
-                    <label>Date</label>
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                    <label>Date {activeTab === 'mark' ? '(Today)' : ''}</label>
+                    {activeTab === 'mark' ? (
+                        <input
+                            type="date"
+                            value={markDate}
+                            disabled={true}
+                            title="You can only mark attendance for today"
+                        />
+                    ) : (
+                        <input
+                            type="date"
+                            value={reportDate}
+                            onChange={(e) => setReportDate(e.target.value)}
+                        />
+                    )}
                 </div>
                 <div className="control-group">
                     <label>Department</label>
@@ -149,7 +181,12 @@ const AttendanceManager = () => {
                     <>
                         <div className="control-group">
                             <label>Period (1-5)</label>
-                            <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+                            <select value={period} onChange={(e) => {
+                                setPeriod(e.target.value);
+                                setStudents([]); // Clear list on period change to force fetch
+                                setIsTaken(false);
+                                setMessage('');
+                            }}>
                                 {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                         </div>
@@ -160,9 +197,12 @@ const AttendanceManager = () => {
                                 placeholder="e.g. Java"
                                 value={periodSubject}
                                 onChange={(e) => setPeriodSubject(e.target.value)}
+                                disabled={isTaken}
                             />
                         </div>
-                        <button className="primary-btn" onClick={fetchStudents}>Fetch Students</button>
+                        <button className="primary-btn" onClick={fetchStudents}>
+                            {students.length > 0 ? 'Refresh List' : 'Fetch Students'}
+                        </button>
                     </>
                 )}
 
@@ -172,12 +212,12 @@ const AttendanceManager = () => {
             </div>
 
             {/* Error/Success Message */}
-            {message && <div className="alert">{message}</div>}
+            {message && <div className={`alert ${isTaken ? 'warning' : 'info'}`}>{message}</div>}
 
             {/* Mark Attendance View */}
             {activeTab === 'mark' && students.length > 0 && (
                 <div className="student-list card">
-                    <h3>Class List</h3>
+                    <h3>Class List {isTaken && <span className="badge">Read Only - Submitted</span>}</h3>
                     <div className="list-header">
                         <span>Reg No</span>
                         <span>Name</span>
@@ -188,51 +228,57 @@ const AttendanceManager = () => {
                             <span>{student.reg_no}</span>
                             <span>{student.name}</span>
                             <button
-                                className={`status-toggle ${student.status.toLowerCase()}`}
+                                className={`status-toggle ${student.status ? student.status.toLowerCase() : 'present'}`}
                                 onClick={() => toggleStatus(student.id)}
+                                disabled={isTaken}
+                                style={{ opacity: isTaken ? 0.7 : 1, cursor: isTaken ? 'not-allowed' : 'pointer' }}
                             >
-                                {student.status}
+                                {student.status || 'Present'}
                             </button>
                         </div>
                     ))}
-                    <div className="actions">
-                        <button className="submit-btn" onClick={handleSubmit} disabled={loading}>
-                            {loading ? 'Saving...' : 'Submit Attendance'}
-                        </button>
-                    </div>
+                    {!isTaken && (
+                        <div className="actions">
+                            <button className="submit-btn" onClick={handleSubmit} disabled={loading}>
+                                {loading ? 'Saving...' : 'Submit Attendance'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
             {/* Report View */}
             {activeTab === 'report' && reportData.length > 0 && (
                 <div className="report-view card">
-                    <h3>Daily Attendance Report ({date})</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Reg No</th>
-                                <th>1</th>
-                                <th>2</th>
-                                <th>3</th>
-                                <th>4</th>
-                                <th>5</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {reportData.map(student => (
-                                <tr key={student.id}>
-                                    <td>{student.name}</td>
-                                    <td>{student.reg_no}</td>
-                                    {[1, 2, 3, 4, 5].map(p => (
-                                        <td key={p} className={`status-s ${student.periods[p].toLowerCase()}`}>
-                                            {student.periods[p] === 'Present' ? 'P' : student.periods[p] === 'Absent' ? 'A' : '-'}
-                                        </td>
-                                    ))}
+                    <h3>Daily Attendance Report ({reportDate})</h3>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Reg No</th>
+                                    <th>1</th>
+                                    <th>2</th>
+                                    <th>3</th>
+                                    <th>4</th>
+                                    <th>5</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {reportData.map(student => (
+                                    <tr key={student.id}>
+                                        <td>{student.name}</td>
+                                        <td>{student.reg_no}</td>
+                                        {[1, 2, 3, 4, 5].map(p => (
+                                            <td key={p} className={`status-s ${student.periods[p].toLowerCase()}`}>
+                                                {student.periods[p] === 'Present' ? 'P' : student.periods[p] === 'Absent' ? 'A' : '-'}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
@@ -298,6 +344,10 @@ const AttendanceManager = () => {
                     color: #1e40af;
                     border-radius: 4px;
                 }
+                .alert.warning {
+                    background-color: #fef3c7;
+                    color: #92400e;
+                }
                 .list-header {
                     display: grid;
                     grid-template-columns: 1fr 2fr 1fr;
@@ -341,6 +391,10 @@ const AttendanceManager = () => {
                     font-weight: 600;
                     cursor: pointer;
                 }
+                .submit-btn:disabled {
+                    background-color: #a7f3d0;
+                    cursor: not-allowed;
+                }
                 table {
                     width: 100%;
                     border-collapse: collapse;
@@ -349,6 +403,14 @@ const AttendanceManager = () => {
                     padding: 0.75rem;
                     text-align: left;
                     border-bottom: 1px solid #e5e7eb;
+                }
+                .badge {
+                    background-color: #fef3c7;
+                    color: #92400e;
+                    padding: 0.2rem 0.5rem;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    margin-left: 1rem;
                 }
                 .status-s.present { color: green; font-weight: bold; }
                 .status-s.absent { color: red; font-weight: bold; }

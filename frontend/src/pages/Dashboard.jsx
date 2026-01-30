@@ -1,18 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AttendanceManager from '../components/AttendanceManager';
+import StudentAttendanceView from '../components/StudentAttendanceView';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', etc.
 
+  const [facultyStats, setFacultyStats] = useState(null);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
       navigate('/login');
     } else {
-      setUser(JSON.parse(storedUser));
+      const u = JSON.parse(storedUser);
+      setUser(u);
+
+      // Fetch stats if faculty
+      if (u.role === 'faculty') {
+        fetch('http://localhost:5000/api/attendance/faculty-stats', {
+          headers: { 'x-auth-token': localStorage.getItem('token') }
+        })
+          .then(res => res.json())
+          .then(data => setFacultyStats(data))
+          .catch(err => console.error(err));
+      }
     }
   }, [navigate]);
 
@@ -27,7 +41,9 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeView) {
       case 'attendance':
-        return <AttendanceManager />;
+        if (user.role === 'student') return <StudentAttendanceView />;
+        if (['faculty', 'admin'].includes(user.role)) return <AttendanceManager />;
+        return null;
       case 'dashboard':
       default:
         return (
@@ -38,9 +54,14 @@ const Dashboard = () => {
             </div>
 
             <div className="grid">
-              <div className="card stat-card">
-                <h3>Attendance</h3>
-                <div className="stat-value">85%</div>
+              <div
+                className="card stat-card clickable"
+                onClick={() => setActiveView('attendance')}
+              >
+                <h3>Attendance (Today)</h3>
+                <div className="stat-value">
+                  {user.role === 'faculty' && facultyStats ? `${facultyStats.todayPercentage}%` : 'View →'}
+                </div>
               </div>
               <div className="card stat-card">
                 <h3>Notices</h3>
@@ -69,15 +90,13 @@ const Dashboard = () => {
             Dashboard
           </button>
 
-          {/* Only show Attendance for Faculty/Admin */}
-          {['faculty', 'admin'].includes(user.role) && (
-            <button
-              className={`nav-item ${activeView === 'attendance' ? 'active' : ''}`}
-              onClick={() => setActiveView('attendance')}
-            >
-              Attendance
-            </button>
-          )}
+          {/* Show Attendance for All Roles */}
+          <button
+            className={`nav-item ${activeView === 'attendance' ? 'active' : ''}`}
+            onClick={() => setActiveView('attendance')}
+          >
+            Attendance
+          </button>
 
           <a href="#" className="nav-item">Timetable</a>
           <a href="#" className="nav-item">Notices</a>
@@ -195,6 +214,13 @@ const Dashboard = () => {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
           gap: 1.5rem;
+        }
+        .stat-card {
+          cursor: pointer;
+        }
+        .stat-card:hover {
+          transform: translateY(-2px);
+          transition: transform 0.2s;
         }
         .stat-card h3 {
           color: var(--text-light);

@@ -12,4 +12,11 @@ router.get('/students', auth, attendanceController.getStudentsForMarking);
 // Get Daily Report (Grid View)
 router.get('/daily-report', auth, attendanceController.getDailyReport);
 
+// Get Student Stats (Own)
+router.get('/my-stats', auth, attendanceController.getStudentStats);
+
+
+// Get Faculty Today Stats
+router.get('/faculty-stats', auth, attendanceController.getFacultyTodayStats);
+
 module.exports = router;
