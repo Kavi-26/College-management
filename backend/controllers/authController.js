@@ -58,6 +58,8 @@ exports.register = async (req, res) => {
 // Login User
 exports.login = async (req, res) => {
     const { email, password, role } = req.body;
+    console.log('Login Attempt:', { email, password, role });
+
 
     const table = getTable(role);
     if (!table) return res.status(400).json({ message: 'Invalid role' });
@@ -66,16 +68,19 @@ exports.login = async (req, res) => {
         // Check user in specific table
         const [users] = await db.query(`SELECT * FROM ${table} WHERE email = ?`, [email]);
         if (users.length === 0) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            console.log('User not found in table:', table);
+            return res.status(400).json({ message: `User not found in ${role} table` });
         }
 
         const user = users[0];
 
-        // Check password (Plain Text)
-        // const isMatch = await bcrypt.compare(password, user.password);
-        const isMatch = (password === user.password);
+        // Check password (Plain Text) with robust comparison
+        console.log(`Comparing input '${password}' with stored '${user.password}'`);
+        const isMatch = (String(password).trim() === String(user.password).trim());
+
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            console.log(`Password mismatch: Input length ${password.length}, Stored length ${user.password.length}`);
+            return res.status(400).json({ message: 'Password mismatch' });
         }
 
         // Generate JWT

@@ -1,76 +1,107 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AttendanceManager from '../components/AttendanceManager';
 
 const Dashboard = () => {
-    const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', etc.
 
-    useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-            navigate('/login');
-        } else {
-            setUser(JSON.parse(storedUser));
-        }
-    }, [navigate]);
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      navigate('/login');
+    } else {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [navigate]);
 
-    if (!user) return null;
+  if (!user) return null;
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-    };
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
-    return (
-        <div className="dashboard-layout">
-            {/* Sidebar */}
-            <aside className="sidebar">
-                <div className="logo">SmartCollege</div>
-                <nav className="nav-menu">
-                    <a href="#" className="nav-item active">Dashboard</a>
-                    <a href="#" className="nav-item">Attendance</a>
-                    <a href="#" className="nav-item">Timetable</a>
-                    <a href="#" className="nav-item">Notices</a>
-                    <a href="#" className="nav-item">Resources</a>
-                    <button onClick={handleLogout} className="nav-item logout">Logout</button>
-                </nav>
-            </aside>
+  const renderContent = () => {
+    switch (activeView) {
+      case 'attendance':
+        return <AttendanceManager />;
+      case 'dashboard':
+      default:
+        return (
+          <div className="content-area">
+            <div className="card welcome-card">
+              <h2>Welcome back, {user.name}! 👋</h2>
+              <p>Here is what's happening in your department today.</p>
+            </div>
 
-            {/* Main Content */}
-            <main className="main-content">
-                <header className="top-bar">
-                    <h1 className="page-title">Dashboard</h1>
-                    <div className="user-profile">
-                        <div className="avatar">{user.name.charAt(0)}</div>
-                        <span>{user.name} ({user.role})</span>
-                    </div>
-                </header>
+            <div className="grid">
+              <div className="card stat-card">
+                <h3>Attendance</h3>
+                <div className="stat-value">85%</div>
+              </div>
+              <div className="card stat-card">
+                <h3>Notices</h3>
+                <div className="stat-value">3 New</div>
+              </div>
+              <div className="card stat-card">
+                <h3>Upcoming Events</h3>
+                <div className="stat-value">Freshers Day</div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  }
 
-                <div className="content-area">
-                    <div className="card welcome-card">
-                        <h2>Welcome back, {user.name}! 👋</h2>
-                        <p>Here is what's happening in your department today.</p>
-                    </div>
+  return (
+    <div className="dashboard-layout">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="logo">SmartCollege</div>
+        <nav className="nav-menu">
+          <button
+            className={`nav-item ${activeView === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveView('dashboard')}
+          >
+            Dashboard
+          </button>
 
-                    <div className="grid">
-                        <div className="card stat-card">
-                            <h3>Attendance</h3>
-                            <div className="stat-value">85%</div>
-                        </div>
-                        <div className="card stat-card">
-                            <h3>Notices</h3>
-                            <div className="stat-value">3 New</div>
-                        </div>
-                        <div className="card stat-card">
-                            <h3>Upcoming Events</h3>
-                            <div className="stat-value">Freshers Day</div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+          {/* Only show Attendance for Faculty/Admin */}
+          {['faculty', 'admin'].includes(user.role) && (
+            <button
+              className={`nav-item ${activeView === 'attendance' ? 'active' : ''}`}
+              onClick={() => setActiveView('attendance')}
+            >
+              Attendance
+            </button>
+          )}
 
-            <style>{`
+          <a href="#" className="nav-item">Timetable</a>
+          <a href="#" className="nav-item">Notices</a>
+          <a href="#" className="nav-item">Resources</a>
+          <button onClick={handleLogout} className="nav-item logout">Logout</button>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="main-content">
+        <header className="top-bar">
+          <h1 className="page-title">{activeView.charAt(0).toUpperCase() + activeView.slice(1)}</h1>
+          <div className="user-profile">
+            <div className="avatar">{user.name.charAt(0)}</div>
+            <span>{user.name} ({user.role})</span>
+          </div>
+        </header>
+
+        <div className="content-area">
+          {renderContent()}
+        </div>
+      </main>
+
+      <style>{`
         .dashboard-layout {
           display: flex;
           min-height: 100vh;
@@ -101,6 +132,13 @@ const Dashboard = () => {
           color: var(--text-light);
           font-weight: 500;
           transition: all 0.2s;
+          text-align: left;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1rem;
+          text-decoration: none;
+          display: block;
         }
         .nav-item:hover, .nav-item.active {
           background-color: #eef2ff;
@@ -108,10 +146,6 @@ const Dashboard = () => {
         }
         .logout {
           margin-top: auto;
-          text-align: left;
-          border: none;
-          background: none;
-          cursor: pointer;
           color: #ef4444;
         }
         .logout:hover {
@@ -175,8 +209,8 @@ const Dashboard = () => {
           color: var(--text-color);
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Dashboard;

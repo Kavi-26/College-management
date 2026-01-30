@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     date DATE NOT NULL,
+    period INT NOT NULL CHECK (period BETWEEN 1 AND 5),
     subject VARCHAR(100) NOT NULL,
     status ENUM('Present', 'Absent', 'On Duty') NOT NULL,
     faculty_id INT NOT NULL, -- Marked by Faculty
@@ -164,23 +165,54 @@ CREATE TABLE IF NOT EXISTS academic_resources (
 
 -- 1. Insert Admin
 INSERT INTO admin (name, email, password) VALUES
-('Admin', 'admin@college.edu', 'admin123');
+('Principal Admin', 'admin@college.edu', 'admin123');
 
--- 2. Insert Faculty
+-- 2. Insert Faculty (BCA & MCA)
 INSERT INTO faculty (name, email, password, department, designation) VALUES
-('Ram', 'faculty@college.edu', 'ram123', 'CSE', 'Assistant Professor');
+('Dr. Arun Kumar', 'arun.bca@college.edu', '123456', 'BCA', 'HOD'),
+('Prof. Priya Sharma', 'priya.bca@college.edu', '123456', 'BCA', 'Assistant Professor'),
+('Dr. Rajesh Singh', 'rajesh.mca@college.edu', '123456', 'MCA', 'HOD'),
+('Prof. Sneha Gupta', 'sneha.mca@college.edu', '123456', 'MCA', 'Associate Professor');
 
--- 3. Insert Students
--- Passwords are set to dummy DOBs (DDMMYYYY)
+-- 3. Insert Students (BCA & MCA)
 INSERT INTO students (name, email, password, reg_no, department, year, section) VALUES
-('Kavi', 'kavi@college.edu', '20042005', 'STU001', 'CSE', 'IV', 'A'),
-('Abi', 'abi@college.edu', '10052005', 'STU002', 'CSE', 'IV', 'A');
+-- BCA Students
+('Kavi', 'kavi@college.edu', '20042005', 'BCA001', 'BCA', 'III', 'A'),
+('Abi', 'abi@college.edu', '10052005', 'BCA002', 'BCA', 'III', 'A'),
+('Rahul Verma', 'rahul.bca@college.edu', '123456', 'BCA003', 'BCA', 'II', 'B'),
+('Simran Kaur', 'simran.bca@college.edu', '123456', 'BCA004', 'BCA', 'I', 'A'),
+('Amit Patel', 'amit.bca@college.edu', '123456', 'BCA005', 'BCA', 'III', 'A'),
+('Sneha Reddy', 'sneha.bca@college.edu', '123456', 'BCA006', 'BCA', 'III', 'A'),
+('Mohammed Ariz', 'ariz.bca@college.edu', '123456', 'BCA007', 'BCA', 'II', 'B'),
+('Pooja Hegde', 'pooja.bca@college.edu', '123456', 'BCA008', 'BCA', 'I', 'A'),
 
--- 4. Attendance
-INSERT INTO attendance (student_id, date, subject, status, faculty_id) VALUES
-(1, CURDATE(), 'Computer Networks', 'Present', 1),
-(1, CURDATE(), 'Web Development', 'Present', 1),
-(2, CURDATE(), 'Computer Networks', 'Absent', 1);
+-- MCA Students
+('Vikram Malhotra', 'vikram.mca@college.edu', '123456', 'MCA001', 'MCA', 'II', 'A'),
+('Anjali Das', 'anjali.mca@college.edu', '123456', 'MCA002', 'MCA', 'I', 'A');
+
+-- 4. Attendance Table (Updated)
+-- Note to User: Drop table first if exists or alter it
+DROP TABLE IF EXISTS attendance;
+CREATE TABLE IF NOT EXISTS attendance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    date DATE NOT NULL,
+    period INT NOT NULL CHECK (period BETWEEN 1 AND 5),
+    subject VARCHAR(100) NOT NULL,
+    status ENUM('Present', 'Absent', 'On Duty') NOT NULL,
+    faculty_id INT NOT NULL, 
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (faculty_id) REFERENCES faculty(id)
+);
+
+-- Seed Attendance
+INSERT INTO attendance (student_id, date, period, subject, status, faculty_id) VALUES
+(1, CURDATE(), 1, 'Web Programming', 'Present', 2),
+(1, CURDATE(), 2, 'Database Management', 'Present', 2),
+(1, CURDATE(), 3, 'Maths', 'Present', 2),
+(1, CURDATE(), 4, 'English', 'Present', 2),
+(1, CURDATE(), 5, 'Lab', 'Present', 2),
+(2, CURDATE(), 1, 'Web Programming', 'Absent', 2);
 
 -- 5. Timetable
 INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no) VALUES
