@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AttendanceManager from '../components/AttendanceManager';
 import StudentAttendanceView from '../components/StudentAttendanceView';
+import TimetableView from '../components/TimetableView';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -44,6 +45,8 @@ const Dashboard = () => {
         if (user.role === 'student') return <StudentAttendanceView />;
         if (['faculty', 'admin'].includes(user.role)) return <AttendanceManager />;
         return null;
+      case 'timetable':
+        return <TimetableView />;
       case 'dashboard':
       default:
         return (
@@ -98,7 +101,12 @@ const Dashboard = () => {
             Attendance
           </button>
 
-          <a href="#" className="nav-item">Timetable</a>
+          <button
+            className={`nav-item ${activeView === 'timetable' ? 'active' : ''}`}
+            onClick={() => setActiveView('timetable')}
+          >
+            Timetable
+          </button>
           <a href="#" className="nav-item">Notices</a>
           <a href="#" className="nav-item">Resources</a>
           <button onClick={handleLogout} className="nav-item logout">Logout</button>

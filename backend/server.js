@@ -17,6 +17,7 @@ app.get('/api/health', (req, res) => res.send('Server is updated'));
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
+app.use('/api/timetable', require('./routes/timetableRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Smart College Companion API is running');
