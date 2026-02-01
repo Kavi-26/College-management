@@ -9,13 +9,28 @@ import EventsView from '../components/EventsView';
 import ChatView from '../components/ChatView';
 import NotificationBell from '../components/NotificationBell';
 import ResourceBrowser from '../components/ResourceBrowser';
+import AdminPanel from '../components/AdminPanel';
+import SearchResults from '../components/SearchResults';
+import SettingsView from '../components/SettingsView';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results', 'events', 'chat', 'resources'
+  const [activeView, setActiveView] = useState('dashboard');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   const [facultyStats, setFacultyStats] = useState(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -34,6 +49,31 @@ const Dashboard = () => {
       }
     }
   }, [navigate]);
+
+  const handleSearch = async (query) => {
+    if (!query || query.length < 2) {
+      setShowSearchResults(false);
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/search?q=${query}`, {
+        headers: { 'x-auth-token': localStorage.getItem('token') }
+      });
+      const data = await res.json();
+      setSearchResults(data);
+      setShowSearchResults(true);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleSearchResultClick = (item) => {
+    setShowSearchResults(false);
+    if (item.type === 'notice') setActiveView('notices');
+    if (item.type === 'event') setActiveView('events');
+    if (item.type === 'resource') setActiveView('resources');
+    if (item.type === 'student') {
+      alert(`Selected Student: ${item.name}`);
+    }
+  };
 
   if (!user) return null;
 
@@ -61,6 +101,10 @@ const Dashboard = () => {
         return <ChatView />;
       case 'resources':
         return <ResourceBrowser />;
+      case 'admin':
+        return <AdminPanel />;
+      case 'settings':
+        return <SettingsView theme={theme} toggleTheme={toggleTheme} />;
       case 'dashboard':
       default:
         return (
@@ -115,6 +159,12 @@ const Dashboard = () => {
                 <h3>Academic Resources</h3>
                 <div className="stat-value">Download Notes →</div>
               </div>
+              {user.role === 'admin' && (
+                <div className="card stat-card clickable" onClick={() => setActiveView('admin')}>
+                  <h3>System Admin</h3>
+                  <div className="stat-value">Manage System →</div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -127,61 +177,20 @@ const Dashboard = () => {
       <aside className="sidebar">
         <div className="logo">SmartCollege</div>
         <nav className="nav-menu">
-          <button
-            className={`nav-item ${activeView === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveView('dashboard')}
-          >
-            Dashboard
-          </button>
+          <button className={`nav-item ${activeView === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveView('dashboard')}>Dashboard</button>
+          <button className={`nav-item ${activeView === 'attendance' ? 'active' : ''}`} onClick={() => setActiveView('attendance')}>Attendance</button>
+          <button className={`nav-item ${activeView === 'timetable' ? 'active' : ''}`} onClick={() => setActiveView('timetable')}>Timetable</button>
+          <button className={`nav-item ${activeView === 'notices' ? 'active' : ''}`} onClick={() => setActiveView('notices')}>Notices</button>
+          <button className={`nav-item ${activeView === 'results' ? 'active' : ''}`} onClick={() => setActiveView('results')}>Results</button>
+          <button className={`nav-item ${activeView === 'events' ? 'active' : ''}`} onClick={() => setActiveView('events')}>Events</button>
+          <button className={`nav-item ${activeView === 'chat' ? 'active' : ''}`} onClick={() => setActiveView('chat')}>Community Chat</button>
+          <button className={`nav-item ${activeView === 'resources' ? 'active' : ''}`} onClick={() => setActiveView('resources')}>Resources</button>
 
-          <button
-            className={`nav-item ${activeView === 'attendance' ? 'active' : ''}`}
-            onClick={() => setActiveView('attendance')}
-          >
-            Attendance
-          </button>
+          {user.role === 'admin' && (
+            <button className={`nav-item ${activeView === 'admin' ? 'active' : ''}`} onClick={() => setActiveView('admin')}>Admin Panel</button>
+          )}
 
-          <button
-            className={`nav-item ${activeView === 'timetable' ? 'active' : ''}`}
-            onClick={() => setActiveView('timetable')}
-          >
-            Timetable
-          </button>
-
-          <button
-            className={`nav-item ${activeView === 'notices' ? 'active' : ''}`}
-            onClick={() => setActiveView('notices')}
-          >
-            Notices
-          </button>
-
-          <button
-            className={`nav-item ${activeView === 'results' ? 'active' : ''}`}
-            onClick={() => setActiveView('results')}
-          >
-            Results
-          </button>
-
-          <button
-            className={`nav-item ${activeView === 'events' ? 'active' : ''}`}
-            onClick={() => setActiveView('events')}
-          >
-            Events
-          </button>
-
-          <button
-            className={`nav-item ${activeView === 'chat' ? 'active' : ''}`}
-            onClick={() => setActiveView('chat')}
-          >
-            Community Chat
-          </button>
-
-          <button
-            className={`nav-item ${activeView === 'resources' ? 'active' : ''}`}
-            onClick={() => setActiveView('resources')}
-          >
-            Resources
-          </button>
+          <button className={`nav-item ${activeView === 'settings' ? 'active' : ''}`} onClick={() => setActiveView('settings')}>Settings</button>
 
           <button onClick={handleLogout} className="nav-item logout">Logout</button>
         </nav>
