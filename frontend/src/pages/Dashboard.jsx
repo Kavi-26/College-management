@@ -5,11 +5,12 @@ import StudentAttendanceView from '../components/StudentAttendanceView';
 import TimetableView from '../components/TimetableView';
 import NoticeBoard from '../components/NoticeBoard';
 import ResultView from '../components/ResultView';
+import EventsView from '../components/EventsView';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results', 'events'
 
   const [facultyStats, setFacultyStats] = useState(null);
 
@@ -53,6 +54,8 @@ const Dashboard = () => {
         return <NoticeBoard />;
       case 'results':
         return <ResultView />;
+      case 'events':
+        return <EventsView />;
       case 'dashboard':
       default:
         // ... existing dashboard content ...
@@ -79,6 +82,13 @@ const Dashboard = () => {
               >
                 <h3>Notices</h3>
                 <div className="stat-value">View Updates →</div>
+              </div>
+              <div
+                className="card stat-card clickable"
+                onClick={() => setActiveView('events')}
+              >
+                <h3>Upcoming Events</h3>
+                <div className="stat-value">View Calendar →</div>
               </div>
               <div
                 className="card stat-card clickable"
@@ -132,6 +142,13 @@ const Dashboard = () => {
             onClick={() => setActiveView('results')}
           >
             Results
+          </button>
+
+          <button
+            className={`nav-item ${activeView === 'events' ? 'active' : ''}`}
+            onClick={() => setActiveView('events')}
+          >
+            Events
           </button>
 
           <a href="#" className="nav-item">Resources</a>
