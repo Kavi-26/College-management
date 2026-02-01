@@ -25,6 +25,7 @@ app.use('/api/reference', require('./routes/referenceRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/results', require('./routes/resultRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Smart College Companion API is running');
@@ -39,8 +40,43 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
+const http = require('http');
+const { Server } = require('socket.io');
+const chatController = require('./controllers/chatController');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:5173", // Vite frontend port
+        methods: ["GET", "POST"]
+    }
+});
+
+// Socket.io Logic
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    socket.on('join_room', (data) => {
+        socket.join(data);
+        console.log(`User with ID: ${socket.id} joined room: ${data}`);
+    });
+
+    socket.on('send_message', async (data) => {
+        // data: { room, author, message, time }
+        // Save to DB
+        await chatController.saveMessage(data);
+
+        // Broadcast to room
+        socket.to(data.room).emit('receive_message', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected', socket.id);
+    });
+});
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
