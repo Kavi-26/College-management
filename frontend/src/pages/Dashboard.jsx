@@ -190,7 +190,26 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="main-content">
         <header className="top-bar">
-          <h1 className="page-title">{activeView.charAt(0).toUpperCase() + activeView.slice(1)}</h1>
+          <div className="header-left">
+            <h1 className="page-title">{activeView.charAt(0).toUpperCase() + activeView.slice(1)}</h1>
+          </div>
+
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="search-input"
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+            {showSearchResults && (
+              <SearchResults
+                results={searchResults}
+                onClose={() => setShowSearchResults(false)}
+                onNavigate={handleSearchResultClick}
+              />
+            )}
+          </div>
+
           <div className="user-profile">
             <NotificationBell />
             <div className="avatar">{user.name.charAt(0)}</div>
@@ -316,6 +335,26 @@ const Dashboard = () => {
           font-size: 1.5rem;
           font-weight: 700;
           color: var(--text-color);
+        }
+
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            background-color: #f9fafb;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input:focus {
+            background-color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
       `}</style>
     </div>
