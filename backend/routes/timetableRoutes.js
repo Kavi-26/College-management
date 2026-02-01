@@ -3,8 +3,11 @@ const router = express.Router();
 const timetableController = require('../controllers/timetableController');
 const auth = require('../middleware/authMiddleware');
 
-// Public/Protected: Get Timetable
+// Public/Protected: Get Timetable (Class View)
 router.get('/', auth, timetableController.getTimetable);
+
+// Faculty: Get Personal Timetable
+router.get('/my-timetable', auth, timetableController.getMyTimetable);
 
 // Admin Only: Manage Timetable (Simplified auth check for prototype)
 router.post('/entry', auth, timetableController.upsertTimetableEntry);

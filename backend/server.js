@@ -14,10 +14,15 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/api/health', (req, res) => res.send('Server is updated'));
 
+// Serve Uploads statically
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/timetable', require('./routes/timetableRoutes'));
+app.use('/api/reference', require('./routes/referenceRoutes'));
+app.use('/api/notices', require('./routes/noticeRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Smart College Companion API is running');

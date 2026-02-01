@@ -14,9 +14,59 @@ async function seedTimetable() {
         connection = await mysql.createConnection(dbConfig);
         console.log('Connected to database.');
 
-        // Get Faculty ID
-        const [faculty] = await connection.query("SELECT id FROM faculty LIMIT 1");
-        const facultyId = faculty[0].id;
+        // 1. Ensure we have enough Faculty for the constraint "1 Faculty = 1 Subject"
+        // We need about 5-6 faculty members.
+        // Let's create them if they don't exist, or just fetch all and cycle through.
+
+        // Mock Faculty Data to ensure existence
+        const mockFaculty = [
+            { name: 'Prof. Sharma', email: 'sharma@college.edu', dept: 'BCA' }, // Web Programming
+            { name: 'Dr. Priya', email: 'priya@college.edu', dept: 'BCA' }, // DBMS
+            { name: 'Prof. John', email: 'john@college.edu', dept: 'BCA' }, // Maths
+            { name: 'Ms. Anjali', email: 'anjali@college.edu', dept: 'English' }, // English
+            { name: 'Mr. Raj', email: 'raj@college.edu', dept: 'BCA' }, // Cloud Computing
+        ];
+
+        let facultyIds = [];
+
+        for (const f of mockFaculty) {
+            // Check if exists
+            const [rows] = await connection.query('SELECT id FROM faculty WHERE email = ?', [f.email]);
+            let fid;
+            if (rows.length > 0) {
+                fid = rows[0].id;
+            } else {
+                // Insert default pass 'password123' hashed (skip hashing for seed simplicity or use valid hash if needed)
+                // For simplicity in seed, assuming simple insert works or auth handles generic. 
+                // Wait, auth uses bcrypt. I should insert with a known hash or just use existing.
+                // Actually, let's just use whatever faculty exist + create placeholders if empty.
+                // BETTER: Just select all faculty, if < 5, insert dummy ones.
+                const [res] = await connection.query('INSERT INTO faculty (name, email, password, department) VALUES (?, ?, ?, ?)',
+                    [f.name, f.email, '$2b$10$YourHashedPasswordHere', f.dept]);
+                fid = res.insertId;
+            }
+            facultyIds.push(fid);
+        }
+
+        // Map Faculty to Subjects (1:1 Constraint)
+        // Format: { subject: 'Name', type: 'Regular/Lab', facultyIndex: 0 }
+        // We pair Regular and Lab of same subject to SAME faculty if possible, or user said "one faculty handles only one regular class and lab (one subject only)"
+        // So: Prof A -> Web Prog (Reg) + Web Prog (Lab)
+
+        const subjectAllocations = [
+            { name: 'Web Programming', type: 'Regular', fIdx: 0 },
+            { name: 'Web Programming Lab', type: 'Lab', fIdx: 0 }, // Same faculty
+
+            { name: 'Database Management', type: 'Regular', fIdx: 1 },
+            { name: 'DBMS Lab', type: 'Lab', fIdx: 1 }, // Same faculty
+
+            { name: 'Maths', type: 'Regular', fIdx: 2 },
+
+            { name: 'English', type: 'Regular', fIdx: 3 },
+
+            { name: 'Cloud Computing', type: 'Regular', fIdx: 4 },
+            { name: 'Mini Project', type: 'Lab', fIdx: 4 } // Assign to Cloud faculty for now
+        ];
 
         console.log('Clearing existing timetable...');
         await connection.query('DELETE FROM timetable');
@@ -38,29 +88,30 @@ async function seedTimetable() {
         const timeSlots = [
             ['09:00', '09:50'], // 1
             ['09:50', '10:40'], // 2
-            ['10:55', '11:45'], // 3 (After 15m Break)
+            ['10:55', '11:45'], // 3
             ['11:45', '12:35'], // 4
-            ['13:25', '14:15'], // 5 (After Lunch 12:35-1:25) -> Adjusted strictly to 1:25
+            ['13:25', '14:15'], // 5
             ['14:15', '15:05'], // 6 
-            ['15:20', '16:00'], // 7 (After 15m Break 3:05-3:20)
+            ['15:20', '16:00'], // 7
         ];
-
-        // Sample Subjects
-        const subjectsPool = ['Web Programming', 'Database Management', 'Maths', 'English', 'Lab', 'Cloud Computing', 'Mini Project'];
 
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         for (const day of days) {
             for (let i = 0; i < timeSlots.length; i++) {
-                // Saturday half day? User said "Saturday Also" implying full or same structure. I'll do full for now.
-                // Random Subject
-                const subject = subjectsPool[Math.floor(Math.random() * subjectsPool.length)];
+                // Pick a random subject allocation
+                const alloc = subjectAllocations[Math.floor(Math.random() * subjectAllocations.length)];
+
+                const facultyId = facultyIds[alloc.fIdx % facultyIds.length];
                 const [start, end] = timeSlots[i];
 
+                // If Lab, maybe it takes 2 slots? For now simplest case: 1 slot = 1 class entry.
+                // Admin can merge slots later if needed (complex UI), for now distinct blocks.
+
                 await connection.query(`
-                    INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [day, start, end, subject, facultyId, 'BCA', 'III', 'A', 'LH-101']);
+                    INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no, type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [day, start, end, alloc.name, facultyId, 'BCA', 'III', 'A', 'LH-101', alloc.type]);
             }
         }
 

@@ -13,6 +13,17 @@ const getTable = (role) => {
 };
 
 // Register User (Admin/Faculty/Student)
+// Basic Faculty List for Admin Dropdown - Mock or Simple Select
+exports.getFacultyList = async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT id, name, department FROM faculty ORDER BY name');
+        res.json(rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 exports.register = async (req, res) => {
     const { name, email, password, role, reg_no, department, year, section, designation } = req.body;
 
@@ -117,7 +128,7 @@ exports.login = async (req, res) => {
 };
 
 // Get Current User Profile
-exports.getMe = async (req, res) => {
+exports.getUser = async (req, res) => {
     try {
         const role = req.user.role;
         const table = getTable(role);

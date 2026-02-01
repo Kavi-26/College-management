@@ -3,23 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import AttendanceManager from '../components/AttendanceManager';
 import StudentAttendanceView from '../components/StudentAttendanceView';
 import TimetableView from '../components/TimetableView';
+import NoticeBoard from '../components/NoticeBoard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', etc.
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices'
 
   const [facultyStats, setFacultyStats] = useState(null);
 
   useEffect(() => {
+    // ... existing useEffect ...
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
       navigate('/login');
     } else {
       const u = JSON.parse(storedUser);
       setUser(u);
-
-      // Fetch stats if faculty
+      // ... stats fetch ...
       if (u.role === 'faculty') {
         fetch('http://localhost:5000/api/attendance/faculty-stats', {
           headers: { 'x-auth-token': localStorage.getItem('token') }
@@ -47,8 +48,11 @@ const Dashboard = () => {
         return null;
       case 'timetable':
         return <TimetableView />;
+      case 'notices':
+        return <NoticeBoard />;
       case 'dashboard':
       default:
+        // ... existing dashboard content ...
         return (
           <div className="content-area">
             <div className="card welcome-card">
@@ -66,9 +70,12 @@ const Dashboard = () => {
                   {user.role === 'faculty' && facultyStats ? `${facultyStats.todayPercentage}%` : 'View →'}
                 </div>
               </div>
-              <div className="card stat-card">
+              <div
+                className="card stat-card clickable"
+                onClick={() => setActiveView('notices')}
+              >
                 <h3>Notices</h3>
-                <div className="stat-value">3 New</div>
+                <div className="stat-value">View Updates →</div>
               </div>
               <div className="card stat-card">
                 <h3>Upcoming Events</h3>
@@ -93,7 +100,6 @@ const Dashboard = () => {
             Dashboard
           </button>
 
-          {/* Show Attendance for All Roles */}
           <button
             className={`nav-item ${activeView === 'attendance' ? 'active' : ''}`}
             onClick={() => setActiveView('attendance')}
@@ -107,7 +113,14 @@ const Dashboard = () => {
           >
             Timetable
           </button>
-          <a href="#" className="nav-item">Notices</a>
+
+          <button
+            className={`nav-item ${activeView === 'notices' ? 'active' : ''}`}
+            onClick={() => setActiveView('notices')}
+          >
+            Notices
+          </button>
+
           <a href="#" className="nav-item">Resources</a>
           <button onClick={handleLogout} className="nav-item logout">Logout</button>
         </nav>

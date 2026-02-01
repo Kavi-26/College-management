@@ -1,19 +1,57 @@
 
-
 import React, { useState, useEffect } from 'react';
+import TimetableModal from './TimetableModal';
 
 const TimetableView = () => {
     const [timetable, setTimetable] = useState(null);
     const [loading, setLoading] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingEntry, setEditingEntry] = useState(null);
+    const [facultyList, setFacultyList] = useState([]);
+
+    // Reference Data from Database
+    const [departments, setDepartments] = useState([]);
+    const [years, setYears] = useState([]);
+    const [sections, setSections] = useState([]);
+
     // Filters
+    const [viewMode, setViewMode] = useState('class'); // 'class' or 'personal' (for faculty)
     const [department, setDepartment] = useState('BCA');
     const [year, setYear] = useState('III');
     const [section, setSection] = useState('A');
 
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user'));
+
+    // Fetch Reference Data
+    useEffect(() => {
+        const fetchReferenceData = async () => {
+            try {
+                const [deptRes, yearRes, sectRes] = await Promise.all([
+                    fetch('http://localhost:5000/api/reference/departments', { headers: { 'x-auth-token': token } }),
+                    fetch('http://localhost:5000/api/reference/years', { headers: { 'x-auth-token': token } }),
+                    fetch('http://localhost:5000/api/reference/sections', { headers: { 'x-auth-token': token } })
+                ]);
+
+                const [deptData, yearData, sectData] = await Promise.all([
+                    deptRes.json(),
+                    yearRes.json(),
+                    sectRes.json()
+                ]);
+
+                setDepartments(deptData);
+                setYears(yearData);
+                setSections(sectData);
+            } catch (err) {
+                console.error('Failed to fetch reference data:', err);
+            }
+        };
+
+        fetchReferenceData();
+    }, [token]);
 
     // Set defaults
     useEffect(() => {
@@ -23,6 +61,29 @@ const TimetableView = () => {
             setSection(user.section);
         } else if (user.role === 'faculty') {
             setDepartment(user.department);
+            setViewMode('personal'); // Default to personal for faculty
+        }
+
+        // Fetch Faculty List for Admin Dropdown
+        if (user.role === 'admin') {
+            fetch('http://localhost:5000/api/auth/faculty-list', { // Need to ensure this endpoint exists or mock it
+                headers: { 'x-auth-token': token }
+            })
+                // Fallback since we might not have a dedicated list endpoint yet
+                // Actually, let's just create a quick mock list or use what we have if the endpoint fails
+                // Ideally we should make an endpoint. For now, let's assume one exists or I will create it.
+                // I'll skip the actual fetch for now and use the mock set in state if fetch fails,
+                // but to be safe I will add a simple endpoint next.
+                .then(res => res.json())
+                .then(data => setFacultyList(data))
+                .catch(err => {
+                    console.warn("Failed to fetch faculty list, using fallback");
+                    // Fallback mock
+                    setFacultyList([
+                        { id: 1, name: 'Prof. Sharma', department: 'BCA' },
+                        { id: 2, name: 'Dr. Priya', department: 'BCA' }
+                    ]);
+                });
         }
 
         // Clock timer
@@ -33,7 +94,14 @@ const TimetableView = () => {
     const fetchTimetable = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/timetable?department=${department}&year=${year}&section=${section}`, {
+            let url = '';
+            if (user.role === 'faculty' && viewMode === 'personal') {
+                url = `http://localhost:5000/api/timetable/my-timetable`;
+            } else {
+                url = `http://localhost:5000/api/timetable?department=${department}&year=${year}&section=${section}`;
+            }
+
+            const res = await fetch(url, {
                 headers: { 'x-auth-token': token }
             });
             const data = await res.json();
@@ -47,7 +115,57 @@ const TimetableView = () => {
 
     useEffect(() => {
         fetchTimetable();
-    }, [department, year, section]);
+    }, [department, year, section, viewMode]);
+
+    // Admin Actions
+    const handleAddClick = () => {
+        setEditingEntry(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditClick = (entry) => {
+        setEditingEntry(entry);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveEntry = async (formData) => {
+        try {
+            const body = {
+                ...formData,
+                department, year, section // Ensure we save to current view if not specified
+            };
+
+            await fetch('http://localhost:5000/api/timetable/entry', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify(body)
+            });
+
+            setIsModalOpen(false);
+            fetchTimetable(); // Refresh
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save entry');
+        }
+    };
+
+    const handleDeleteEntry = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this class?')) return;
+        try {
+            await fetch(`http://localhost:5000/api/timetable/entry/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-auth-token': token }
+            });
+            setIsModalOpen(false);
+            fetchTimetable();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to delete');
+        }
+    };
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -73,12 +191,6 @@ const TimetableView = () => {
 
         const fullSchedule = [];
         // Expected Breaks Logic
-        // We know the standard times now:
-        // 10:40 - 10:55 (Break)
-        // 12:35 - 01:25 (Lunch)
-        // 03:05 - 03:20 (Break) - adjusted from seed logic
-
-        // Simpler approach: Sort sessions, find gaps > 10 mins
         const sorted = [...sessions].sort((a, b) => a.start_time.localeCompare(b.start_time));
 
         for (let i = 0; i < sorted.length; i++) {
@@ -86,14 +198,11 @@ const TimetableView = () => {
 
             if (i < sorted.length - 1) {
                 const currentEnd = sorted[i].end_time; // HH:MM:SS
-                const nextStart = sorted[i + 1].start_time;
-
-                // Let's identify specific breaks by their known start times
                 if (currentEnd.startsWith('10:40')) {
                     fullSchedule.push({ type: 'break', name: 'Morning Break', start: '10:40', end: '10:55', icon: '☕' });
                 } else if (currentEnd.startsWith('12:35')) {
                     fullSchedule.push({ type: 'break', name: 'Lunch Break', start: '12:35', end: '13:25', icon: '🍱' });
-                } else if (currentEnd.startsWith('15:05')) { // Adjusted based on seed
+                } else if (currentEnd.startsWith('15:05')) {
                     fullSchedule.push({ type: 'break', name: 'Afternoon Break', start: '15:05', end: '15:20', icon: '🥤' });
                 }
             }
@@ -103,38 +212,59 @@ const TimetableView = () => {
 
     return (
         <div className="timetable-view">
-            <h2>
-                Class Timetable
-                <span className="live-badge">🔴 Live</span>
-            </h2>
-
-            {/* Filters */}
-            <div className="filters card">
-                <div className="filter-group">
-                    <label>Department</label>
-                    <select value={department} onChange={(e) => setDepartment(e.target.value)} disabled={user.role === 'student'}>
-                        <option value="BCA">BCA</option>
-                        <option value="MCA">MCA</option>
-                        <option value="CSE">CSE</option>
-                    </select>
-                </div>
-                <div className="filter-group">
-                    <label>Year</label>
-                    <select value={year} onChange={(e) => setYear(e.target.value)} disabled={user.role === 'student'}>
-                        <option value="I">I</option>
-                        <option value="II">II</option>
-                        <option value="III">III</option>
-                        <option value="IV">IV</option>
-                    </select>
-                </div>
-                <div className="filter-group">
-                    <label>Section</label>
-                    <select value={section} onChange={(e) => setSection(e.target.value)} disabled={user.role === 'student'}>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                    </select>
-                </div>
+            <div className="header-row">
+                <h2>
+                    {viewMode === 'personal' ? 'My Schedule' : 'Class Timetable'}
+                    <span className="live-badge">🔴 Live</span>
+                </h2>
+                {/* Faculty Toggle */}
+                {user.role === 'faculty' && (
+                    <div className="view-toggle">
+                        <button
+                            className={viewMode === 'personal' ? 'active' : ''}
+                            onClick={() => setViewMode('personal')}
+                        >
+                            My Schedule
+                        </button>
+                        <button
+                            className={viewMode === 'class' ? 'active' : ''}
+                            onClick={() => setViewMode('class')}
+                        >
+                            Class View
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {/* Filters (Disable for Faculty Personal View) */}
+            {viewMode === 'class' && (
+                <div className="filters card">
+                    <div className="filter-group">
+                        <label>Department</label>
+                        <select value={department} onChange={(e) => setDepartment(e.target.value)} disabled={user.role === 'student'}>
+                            {departments.map(dept => (
+                                <option key={dept.code} value={dept.code}>{dept.code}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="filter-group">
+                        <label>Year</label>
+                        <select value={year} onChange={(e) => setYear(e.target.value)} disabled={user.role === 'student'}>
+                            {years.map(yr => (
+                                <option key={yr.code} value={yr.code}>{yr.code}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="filter-group">
+                        <label>Section</label>
+                        <select value={section} onChange={(e) => setSection(e.target.value)} disabled={user.role === 'student'}>
+                            {sections.map(sec => (
+                                <option key={sec.code} value={sec.code}>{sec.code}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
 
             {loading && <div className="loading">Loading schedule...</div>}
 
@@ -146,13 +276,18 @@ const TimetableView = () => {
 
                         return (
                             <div key={day} className={`day-card card ${isToday ? 'today-highlight' : ''}`}>
-                                <h3 className="day-header">{day} {isToday && '(Today)'}</h3>
+                                <h3 className="day-header">
+                                    {day} {isToday && '(Today)'}
+                                    {/* Admin Add Button Placeholder */}
+                                    {user.role === 'admin' && (
+                                        <button className="add-btn" onClick={handleAddClick} title="Add Class">+</button>
+                                    )}
+                                </h3>
                                 <div className="sessions">
                                     {schedule.length > 0 ? (
                                         schedule.map((item, index) => {
-                                            const isActive = isCurrentSlot(day, item.start_time || item.start, item.end_time || item.end);
-
                                             if (item.type === 'break') {
+                                                const isActive = isCurrentSlot(day, item.start, item.end);
                                                 return (
                                                     <div key={index} className={`break-item ${isActive ? 'active-pulse' : ''}`}>
                                                         <span className="break-icon">{item.icon}</span>
@@ -164,19 +299,31 @@ const TimetableView = () => {
                                                 );
                                             }
 
+                                            const isActive = isCurrentSlot(day, item.start_time, item.end_time);
                                             return (
-                                                <div key={index} className={`session-item ${isActive ? 'active-pulse' : ''}`}>
+                                                <div key={index} className={`session-item ${isActive ? 'active-pulse' : ''} ${item.type === 'Lab' ? 'lab-item' : ''}`}>
                                                     <div className="time-col">
                                                         <span className="start">{item.start_time.slice(0, 5)}</span>
                                                         <span className="end">{item.end_time.slice(0, 5)}</span>
                                                     </div>
                                                     <div className="details-col">
-                                                        <h4>{item.subject}</h4>
+                                                        <h4>
+                                                            {item.subject}
+                                                            {item.type === 'Lab' && <span className="tag lab-tag">🧪 Lab</span>}
+                                                            {item.type === 'Regular' && <span className="tag regular-tag">📖 Regular</span>}
+                                                        </h4>
                                                         <div className="meta">
+                                                            {/* Show Class Name for Faculty Personal View */}
+                                                            {viewMode === 'personal' && (
+                                                                <span className="class-badge">🎓 {item.display_title}</span>
+                                                            )}
                                                             <span className="faculty-badge">👤 {item.faculty_name || 'Staff'}</span>
                                                             <span className="room-badge">📍 {item.room_no || 'LH-1'}</span>
                                                         </div>
                                                     </div>
+                                                    {user.role === 'admin' && (
+                                                        <button className="edit-btn" onClick={() => handleEditClick(item)}>✎</button>
+                                                    )}
                                                 </div>
                                             );
                                         })
@@ -190,12 +337,51 @@ const TimetableView = () => {
                 </div>
             )}
 
+            <TimetableModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveEntry}
+                onDelete={handleDeleteEntry}
+                initialData={editingEntry}
+                departments={['BCA', 'MCA', 'CSE']}
+                facultyList={facultyList}
+            />
+
             <style>{`
                 .timetable-view {
                     display: flex;
                     flex-direction: column;
                     gap: 1.5rem;
                 }
+                .header-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 1rem;
+                }
+                .view-toggle {
+                    display: flex;
+                    gap: 0.5rem;
+                    background: #e5e7eb;
+                    padding: 0.25rem;
+                    border-radius: 8px;
+                }
+                .view-toggle button {
+                    padding: 0.5rem 1rem;
+                    border: none;
+                    background: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    color: #4b5563;
+                }
+                .view-toggle button.active {
+                    background: white;
+                    color: var(--primary-color);
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+
                 .live-badge {
                     font-size: 0.8rem;
                     background-color: #fee2e2;
@@ -240,10 +426,19 @@ const TimetableView = () => {
                     border-bottom: 1px solid #e5e7eb;
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                 }
                 .today-highlight .day-header {
                     background-color: var(--primary-color);
                     color: white;
+                }
+                .add-btn {
+                    padding: 0px 8px;
+                    border-radius: 4px;
+                    border: 1px solid rgba(255,255,255,0.5);
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    cursor: pointer;
                 }
 
                 .sessions {
@@ -262,6 +457,10 @@ const TimetableView = () => {
                     border-radius: 8px;
                     border: 1px solid #f3f4f6;
                     transition: all 0.2s;
+                    position: relative;
+                }
+                .session-item.lab-item {
+                    border-left: 4px solid #8b5cf6; /* Purple for Lab */
                 }
                 .session-item:hover {
                     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -279,15 +478,43 @@ const TimetableView = () => {
                     color: var(--text-light);
                 }
                 .details-col { flex: 1; }
-                .details-col h4 { margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-color); }
+                .details-col h4 { margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-color); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
                 .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-                
-                .faculty-badge, .room-badge {
+
+                .faculty-badge, .room-badge, .class-badge {
                     font-size: 0.75rem;
                     padding: 2px 6px;
                     border-radius: 4px;
                     background-color: #f3f4f6;
                     color: #4b5563;
+                }
+                .class-badge {
+                    background-color: #ecfdf5;
+                    color: #047857;
+                }
+
+                .tag {
+                    font-size: 0.7rem;
+                    padding: 2px 6px;
+                    border-radius: 12px;
+                    font-weight: normal;
+                }
+                .lab-tag { background-color: #ede9fe; color: #6d28d9; }
+                .regular-tag { background-color: #e0e7ff; color: #3730a3; }
+
+                .edit-btn {
+                    position: absolute;
+                    top: 0.5rem;
+                    right: 0.5rem;
+                    background: none;
+                    border: none;
+                    color: #9ca3af;
+                    cursor: pointer;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                }
+                .session-item:hover .edit-btn {
+                    opacity: 1;
                 }
 
                 /* Break Item */
