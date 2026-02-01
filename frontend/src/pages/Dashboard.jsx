@@ -7,11 +7,13 @@ import NoticeBoard from '../components/NoticeBoard';
 import ResultView from '../components/ResultView';
 import EventsView from '../components/EventsView';
 import ChatView from '../components/ChatView';
+import NotificationBell from '../components/NotificationBell';
+import ResourceBrowser from '../components/ResourceBrowser';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results', 'events', 'chat'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results', 'events', 'chat', 'resources'
 
   const [facultyStats, setFacultyStats] = useState(null);
 
@@ -57,6 +59,8 @@ const Dashboard = () => {
         return <EventsView />;
       case 'chat':
         return <ChatView />;
+      case 'resources':
+        return <ResourceBrowser />;
       case 'dashboard':
       default:
         return (
@@ -103,6 +107,13 @@ const Dashboard = () => {
               >
                 <h3>Results</h3>
                 <div className="stat-value">Check Marks →</div>
+              </div>
+              <div
+                className="card stat-card clickable"
+                onClick={() => setActiveView('resources')}
+              >
+                <h3>Academic Resources</h3>
+                <div className="stat-value">Download Notes →</div>
               </div>
             </div>
           </div>
@@ -165,7 +176,13 @@ const Dashboard = () => {
             Community Chat
           </button>
 
-          <a href="#" className="nav-item">Resources</a>
+          <button
+            className={`nav-item ${activeView === 'resources' ? 'active' : ''}`}
+            onClick={() => setActiveView('resources')}
+          >
+            Resources
+          </button>
+
           <button onClick={handleLogout} className="nav-item logout">Logout</button>
         </nav>
       </aside>
@@ -175,6 +192,7 @@ const Dashboard = () => {
         <header className="top-bar">
           <h1 className="page-title">{activeView.charAt(0).toUpperCase() + activeView.slice(1)}</h1>
           <div className="user-profile">
+            <NotificationBell />
             <div className="avatar">{user.name.charAt(0)}</div>
             <span>{user.name} ({user.role})</span>
           </div>
