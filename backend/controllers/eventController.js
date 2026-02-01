@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const notificationController = require('./notificationController');
 
 // Get All Events
 exports.getAllEvents = async (req, res) => {
@@ -39,7 +40,22 @@ exports.createEvent = async (req, res) => {
             INSERT INTO events (title, description, date, location, organizer, created_by)
             VALUES (?, ?, ?, ?, ?, ?)
         `;
-        await db.query(query, [title, description, date, location, organizer, created_by]);
+        const [result] = await db.query(query, [title, description, date, location, organizer, created_by]);
+
+        // Notify ALL Students
+        const io = req.app.get('io');
+        // Fetch all student IDs
+        const [students] = await db.query('SELECT id FROM students');
+
+        students.forEach(student => {
+            notificationController.createNotification(io, {
+                userId: student.id,
+                title: 'New Event: ' + title,
+                message: `Check out the new event "${title}" on ${new Date(date).toLocaleDateString()} at ${location}.`,
+                type: 'event',
+                relatedId: result.insertId
+            });
+        });
 
         res.status(201).json({ message: 'Event created successfully' });
     } catch (error) {

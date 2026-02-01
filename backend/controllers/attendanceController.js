@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const notificationController = require('./notificationController');
 
 // Mark Attendance (Bulk for a class/period)
 exports.markAttendance = async (req, res) => {
@@ -18,10 +19,8 @@ exports.markAttendance = async (req, res) => {
         }
 
         // We could optimize this with a single bulk INSERT ... ON DUPLICATE KEY UPDATE query
-        // But for clarity/simplicity, we'll loop or use a promise key
+        // But for simplicity, we'll loop
         const queries = studentStatuses.map(s => {
-            // Check if record exists for this student, date, period
-            // If yes, update. If no, insert.
             const query = `
                 INSERT INTO attendance (student_id, date, period, subject, status, faculty_id)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -34,6 +33,20 @@ exports.markAttendance = async (req, res) => {
         });
 
         await Promise.all(queries);
+
+        // TRIGGER NOTIFICATIONS
+        // Notify absent students or all students? Usually absent students get notified, or just "Attendance Marked"
+        // Let's notify everyone that attendance has been marked
+        const io = req.app.get('io');
+        studentStatuses.forEach(s => {
+            notificationController.createNotification(io, {
+                userId: s.student_id,
+                title: 'Attendance Update',
+                message: `Your attendance for ${subject} (Period ${period}) has been marked as ${s.status}.`,
+                type: 'attendance'
+            });
+        });
+
         res.json({ message: 'Attendance marked successfully' });
 
     } catch (error) {

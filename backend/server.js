@@ -26,6 +26,7 @@ app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/results', require('./routes/resultRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Smart College Companion API is running');
@@ -52,9 +53,18 @@ const io = new Server(server, {
     }
 });
 
+// Set io to app so controllers can access it
+app.set('io', io);
+
 // Socket.io Logic
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
+    // Join user-specific room
+    socket.on('join_user_room', (userId) => {
+        socket.join(`user_${userId}`);
+        console.log(`User ${userId} joined notification room`);
+    });
 
     socket.on('join_room', (data) => {
         socket.join(data);

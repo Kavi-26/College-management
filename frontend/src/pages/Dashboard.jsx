@@ -6,23 +6,22 @@ import TimetableView from '../components/TimetableView';
 import NoticeBoard from '../components/NoticeBoard';
 import ResultView from '../components/ResultView';
 import EventsView from '../components/EventsView';
+import ChatView from '../components/ChatView';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results', 'events'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results', 'events', 'chat'
 
   const [facultyStats, setFacultyStats] = useState(null);
 
   useEffect(() => {
-    // ... existing useEffect ...
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
       navigate('/login');
     } else {
       const u = JSON.parse(storedUser);
       setUser(u);
-      // ... stats fetch ...
       if (u.role === 'faculty') {
         fetch('http://localhost:5000/api/attendance/faculty-stats', {
           headers: { 'x-auth-token': localStorage.getItem('token') }
@@ -56,9 +55,10 @@ const Dashboard = () => {
         return <ResultView />;
       case 'events':
         return <EventsView />;
+      case 'chat':
+        return <ChatView />;
       case 'dashboard':
       default:
-        // ... existing dashboard content ...
         return (
           <div className="content-area">
             <div className="card welcome-card">
@@ -89,6 +89,13 @@ const Dashboard = () => {
               >
                 <h3>Upcoming Events</h3>
                 <div className="stat-value">View Calendar →</div>
+              </div>
+              <div
+                className="card stat-card clickable"
+                onClick={() => setActiveView('chat')}
+              >
+                <h3>Community Chat</h3>
+                <div className="stat-value">Join Discussion →</div>
               </div>
               <div
                 className="card stat-card clickable"
@@ -151,6 +158,13 @@ const Dashboard = () => {
             Events
           </button>
 
+          <button
+            className={`nav-item ${activeView === 'chat' ? 'active' : ''}`}
+            onClick={() => setActiveView('chat')}
+          >
+            Community Chat
+          </button>
+
           <a href="#" className="nav-item">Resources</a>
           <button onClick={handleLogout} className="nav-item logout">Logout</button>
         </nav>
@@ -203,7 +217,7 @@ const Dashboard = () => {
           font-weight: 500;
           transition: all 0.2s;
           text-align: left;
-          background: none;
+           background: none;
           border: none;
           cursor: pointer;
           font-size: 1rem;
