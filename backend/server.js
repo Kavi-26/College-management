@@ -23,6 +23,7 @@ app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/timetable', require('./routes/timetableRoutes'));
 app.use('/api/reference', require('./routes/referenceRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
+app.use('/api/results', require('./routes/resultRoutes'));
 
 app.get('/', (req, res) => {
     res.send('Smart College Companion API is running');

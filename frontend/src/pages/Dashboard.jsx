@@ -4,11 +4,12 @@ import AttendanceManager from '../components/AttendanceManager';
 import StudentAttendanceView from '../components/StudentAttendanceView';
 import TimetableView from '../components/TimetableView';
 import NoticeBoard from '../components/NoticeBoard';
+import ResultView from '../components/ResultView';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices'
+  const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'attendance', 'timetable', 'notices', 'results'
 
   const [facultyStats, setFacultyStats] = useState(null);
 
@@ -50,6 +51,8 @@ const Dashboard = () => {
         return <TimetableView />;
       case 'notices':
         return <NoticeBoard />;
+      case 'results':
+        return <ResultView />;
       case 'dashboard':
       default:
         // ... existing dashboard content ...
@@ -77,9 +80,12 @@ const Dashboard = () => {
                 <h3>Notices</h3>
                 <div className="stat-value">View Updates →</div>
               </div>
-              <div className="card stat-card">
-                <h3>Upcoming Events</h3>
-                <div className="stat-value">Freshers Day</div>
+              <div
+                className="card stat-card clickable"
+                onClick={() => setActiveView('results')}
+              >
+                <h3>Results</h3>
+                <div className="stat-value">Check Marks →</div>
               </div>
             </div>
           </div>
@@ -119,6 +125,13 @@ const Dashboard = () => {
             onClick={() => setActiveView('notices')}
           >
             Notices
+          </button>
+
+          <button
+            className={`nav-item ${activeView === 'results' ? 'active' : ''}`}
+            onClick={() => setActiveView('results')}
+          >
+            Results
           </button>
 
           <a href="#" className="nav-item">Resources</a>
