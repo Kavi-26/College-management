@@ -120,10 +120,8 @@ const AdminPanel = () => {
                             value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} />
 
                         <div className="row">
-                            <select value={newSubject.department_code} onChange={e => setNewSubject({ ...newSubject, department_code: e.target.value })}>
+                            <select value={newSubject.department_code} disabled>
                                 <option value="BCA">BCA</option>
-                                <option value="CSE">CSE</option>
-                                <option value="MCA">MCA</option>
                             </select>
                             <select value={newSubject.year_code} onChange={e => setNewSubject({ ...newSubject, year_code: e.target.value })}>
                                 <option value="I">I</option>

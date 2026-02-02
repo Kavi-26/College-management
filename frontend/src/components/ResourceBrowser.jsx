@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 const ResourceBrowser = () => {
     const [resources, setResources] = useState([]);
     const [uploadMode, setUploadMode] = useState(false);
-    const [newItem, setNewItem] = useState({ title: '', subject_code: '', department: 'Computer Science', year: 'I' }); // Basic defaults
+    const [newItem, setNewItem] = useState({ title: '', subject_code: '', department: 'BCA', year: 'III' }); // Base defaults
     const [file, setFile] = useState(null);
     const [filters, setFilters] = useState({ department: '', year: '', subject_code: '' });
 
@@ -20,6 +20,7 @@ const ResourceBrowser = () => {
             const res = await fetch(`http://localhost:5000/api/resources?${query}`, {
                 headers: { 'x-auth-token': token }
             });
+            if (!res.ok) throw new Error('Failed to fetch resources');
             const data = await res.json();
             setResources(data);
         } catch (err) {
@@ -83,10 +84,8 @@ const ResourceBrowser = () => {
 
             {/* Filters */}
             <div className="filters">
-                <select onChange={(e) => setFilters({ ...filters, department: e.target.value })}>
-                    <option value="">All Departments</option>
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Electronics">Electronics</option>
+                <select onChange={(e) => setFilters({ ...filters, department: e.target.value })} disabled>
+                    <option value="BCA">BCA (Computer Applications)</option>
                 </select>
                 <select onChange={(e) => setFilters({ ...filters, year: e.target.value })}>
                     <option value="">All Years</option>
@@ -128,9 +127,8 @@ const ResourceBrowser = () => {
                                 onChange={(e) => setNewItem({ ...newItem, subject_code: e.target.value })} />
 
                             <div className="row">
-                                <select onChange={(e) => setNewItem({ ...newItem, department: e.target.value })}>
-                                    <option value="Computer Science">Computer Science</option>
-                                    <option value="Electronics">Electronics</option>
+                                <select value="BCA" disabled>
+                                    <option value="BCA">BCA</option>
                                 </select>
                                 <select onChange={(e) => setNewItem({ ...newItem, year: e.target.value })}>
                                     <option value="I">I</option>

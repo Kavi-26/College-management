@@ -239,8 +239,8 @@ const TimetableView = () => {
                 <div className="filters card">
                     <div className="filter-group">
                         <label>Department</label>
-                        <select value={department} onChange={(e) => setDepartment(e.target.value)} disabled={user.role === 'student'}>
-                            {departments.map(dept => (
+                        <select value={department} disabled>
+                            {departments.filter(d => d.code === 'BCA').map(dept => (
                                 <option key={dept.code} value={dept.code}>{dept.code}</option>
                             ))}
                         </select>
@@ -341,7 +341,7 @@ const TimetableView = () => {
                 onSave={handleSaveEntry}
                 onDelete={handleDeleteEntry}
                 initialData={editingEntry}
-                departments={['BCA', 'MCA', 'CSE']}
+                departments={['BCA']}
                 facultyList={facultyList}
             />
 

@@ -158,7 +158,7 @@ const AttendanceManager = () => {
                 </div>
                 <div className="control-group">
                     <label>Department</label>
-                    <select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                    <select value={department} disabled>
                         <option value="BCA">BCA</option>
                     </select>
                 </div>

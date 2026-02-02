@@ -1,5 +1,5 @@
 -- ==========================================
--- Smart College Companion - Complete Database Setup
+-- Smart College Companion - Complete Database Setup (BCA ONLY)
 -- ==========================================
 
 DROP DATABASE IF EXISTS college_db;
@@ -56,17 +56,14 @@ CREATE TABLE IF NOT EXISTS rooms (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seed Reference Data
+-- Seed Reference Data (BCA ONLY)
 INSERT INTO departments (code, name) VALUES 
-('BCA', 'Bachelor of Computer Applications'),
-('MCA', 'Master of Computer Applications'),
-('CSE', 'Computer Science and Engineering');
+('BCA', 'Bachelor of Computer Applications');
 
 INSERT INTO years (code, name) VALUES 
 ('I', 'First Year'),
 ('II', 'Second Year'),
-('III', 'Third Year'),
-('IV', 'Fourth Year');
+('III', 'Third Year');
 
 INSERT INTO sections (code, name) VALUES 
 ('A', 'Section A'),
@@ -131,16 +128,15 @@ CREATE TABLE IF NOT EXISTS students (
 INSERT INTO admin (name, email, password) VALUES
 ('Principal Admin', 'admin@college.edu', 'admin123');
 
--- Faculty (Ensuring enough faculty for unique subjects)
+-- Faculty (BCA ONLY)
 INSERT INTO faculty (id, name, email, password, department, designation) VALUES
 (1, 'Dr. Arun Kumar', 'arun.bca@college.edu', '123456', 'BCA', 'HOD'),
 (2, 'Prof. Priya Sharma', 'priya.bca@college.edu', '123456', 'BCA', 'Assistant Professor'),
 (3, 'Prof. Rajesh Singh', 'rajesh.bca@college.edu', '123456', 'BCA', 'Assistant Professor'),
 (4, 'Prof. Sneha Gupta', 'sneha.bca@college.edu', '123456', 'BCA', 'Associate Professor'),
-(5, 'Prof. Kavita Reddy', 'kavita.bca@college.edu', '123456', 'BCA', 'Lab Instructor'),
-(6, 'Prof. Vikram Malhotra', 'vikram.mca@college.edu', '123456', 'MCA', 'HOD');
+(5, 'Prof. Kavita Reddy', 'kavita.bca@college.edu', '123456', 'BCA', 'Lab Instructor');
 
--- Students
+-- Students (BCA ONLY)
 INSERT INTO students (name, email, password, reg_no, department, year, section) VALUES
 ('Kavi', 'kavi@college.edu', '20042005', 'BCA001', 'BCA', 'III', 'A'),
 ('Abi', 'abi@college.edu', '10052005', 'BCA002', 'BCA', 'III', 'A'),
@@ -182,7 +178,6 @@ CREATE TABLE IF NOT EXISTS timetable (
 );
 
 -- Seed Timetable (Monday: 4 Regular + 2 Lab)
--- 6 Periods: 9-10, 10-11, 11-12, 12-1 (Regular), 2-3, 3-4 (Lab) - Excluding breaks in DB storage logic if simple
 INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no) VALUES
 ('Monday', '09:00:00', '10:00:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),     -- Faculty 1 (Arun)
 ('Monday', '10:00:00', '11:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'), -- Faculty 2 (Priya)
@@ -191,7 +186,7 @@ INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, d
 ('Monday', '14:00:00', '15:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),  -- Faculty 5 (Kavita)
 ('Monday', '15:00:00', '16:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1');  -- Faculty 5 (Kavita)
 
--- Seed Attendance (Matching the 6 periods constraint)
+-- Seed Attendance
 INSERT INTO attendance (student_id, date, period, subject, status, faculty_id) VALUES
 (1, CURDATE(), 1, 'Web Programming', 'Present', 1),
 (1, CURDATE(), 2, 'Database Management', 'Present', 2),
@@ -280,7 +275,7 @@ CREATE TABLE IF NOT EXISTS event_registrations (
 
 -- Seed Events
 INSERT INTO events (title, description, date, location, organizer, created_by) VALUES
-('Tech Symposium 2026', 'Annual tech fest.', '2026-03-15 10:00:00', 'Main Auditorium', 'CSE Department', 1);
+('Tech Symposium 2026', 'Annual tech fest.', '2026-03-15 10:00:00', 'Main Auditorium', 'BCA Department', 1);
 
 
 -- ==========================================
