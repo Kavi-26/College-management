@@ -102,6 +102,25 @@ const AttendanceManager = () => {
         }
     };
 
+    // Auto-fetch subject
+    useEffect(() => {
+        if (!department || !year || !section || !markDate || !period || activeTab !== 'mark') return;
+
+        const fetchSubject = async () => {
+            try {
+                const dayName = new Date(markDate).toLocaleDateString('en-US', { weekday: 'long' });
+                const res = await fetch(`http://localhost:5000/api/timetable/get-subject?department=${department}&year=${year}&section=${section}&day=${dayName}&period=${period}`, {
+                    headers: { 'x-auth-token': token }
+                });
+                const data = await res.json();
+                if (data.subject) setPeriodSubject(data.subject);
+            } catch (error) {
+                console.error("Failed to auto-fetch subject", error);
+            }
+        };
+        fetchSubject();
+    }, [department, year, section, markDate, period, activeTab]);
+
     // Fetch Daily Report
     const fetchReport = async () => {
         setLoading(true);
@@ -201,9 +220,19 @@ const AttendanceManager = () => {
                                 disabled={isTaken}
                             />
                         </div>
-                        <button className="primary-btn" onClick={fetchStudents}>
-                            {students.length > 0 ? 'Refresh List' : 'Fetch Students'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                            <button className="primary-btn" onClick={fetchStudents}>
+                                {students.length > 0 ? 'Refresh List' : 'Fetch Students'}
+                            </button>
+                            {students.length > 0 && !isTaken && (
+                                <button className="primary-btn" style={{ background: '#6b7280', marginLeft: '10px' }} onClick={() => {
+                                    const allAbsent = students.every(s => s.status === 'Absent');
+                                    setStudents(students.map(s => ({ ...s, status: allAbsent ? 'Present' : 'Absent' })));
+                                }}>
+                                    {students.every(s => s.status === 'Absent') ? 'Mark All Present' : 'Mark All Absent'}
+                                </button>
+                            )}
+                        </div>
                     </>
                 )}
 
@@ -263,6 +292,7 @@ const AttendanceManager = () => {
                                     <th>3</th>
                                     <th>4</th>
                                     <th>5</th>
+                                    <th>6</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -271,8 +301,8 @@ const AttendanceManager = () => {
                                         <td>{student.name}</td>
                                         <td>{student.reg_no}</td>
                                         {[1, 2, 3, 4, 5, 6].map(p => (
-                                            <td key={p} className={`status-s ${student.periods[p].toLowerCase()}`}>
-                                                {student.periods[p] === 'Present' ? 'P' : student.periods[p] === 'Absent' ? 'A' : '-'}
+                                            <td key={p} className={`status-s ${(student.periods[p] || '-').toLowerCase()}`}>
+                                                {student.periods[p] === 'Present' ? 'P' : student.periods[p] === 'Absent' ? 'A' : (student.periods[p] === 'On Duty' ? 'OD' : '-')}
                                             </td>
                                         ))}
                                     </tr>

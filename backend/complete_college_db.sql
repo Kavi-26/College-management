@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS attendance (
 CREATE TABLE IF NOT EXISTS timetable (
     id INT AUTO_INCREMENT PRIMARY KEY,
     day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
+    period INT NOT NULL CHECK (period BETWEEN 1 AND 6),
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     subject VARCHAR(100) NOT NULL,
@@ -174,17 +175,18 @@ CREATE TABLE IF NOT EXISTS timetable (
     year VARCHAR(10) NOT NULL,
     section VARCHAR(10) NOT NULL,
     room_no VARCHAR(50),
-    FOREIGN KEY (faculty_id) REFERENCES faculty(id)
+    FOREIGN KEY (faculty_id) REFERENCES faculty(id),
+    UNIQUE KEY unique_schedule (day_of_week, period, department, year, section)
 );
 
 -- Seed Timetable (Monday: 4 Regular + 2 Lab)
-INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no) VALUES
-('Monday', '09:00:00', '10:00:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),     -- Faculty 1 (Arun)
-('Monday', '10:00:00', '11:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'), -- Faculty 2 (Priya)
-('Monday', '11:15:00', '12:15:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),         -- Faculty 3 (Rajesh)
-('Monday', '12:15:00', '13:15:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),     -- Faculty 4 (Sneha)
-('Monday', '14:00:00', '15:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),  -- Faculty 5 (Kavita)
-('Monday', '15:00:00', '16:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1');  -- Faculty 5 (Kavita)
+INSERT INTO timetable (day_of_week, period, start_time, end_time, subject, faculty_id, department, year, section, room_no) VALUES
+('Monday', 1, '09:00:00', '10:00:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),     -- Faculty 1 (Arun)
+('Monday', 2, '10:00:00', '11:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'), -- Faculty 2 (Priya)
+('Monday', 3, '11:15:00', '12:15:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),         -- Faculty 3 (Rajesh)
+('Monday', 4, '12:15:00', '13:15:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),     -- Faculty 4 (Sneha)
+('Monday', 5, '14:00:00', '15:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),  -- Faculty 5 (Kavita)
+('Monday', 6, '15:00:00', '16:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1');  -- Faculty 5 (Kavita)
 
 -- Seed Attendance
 INSERT INTO attendance (student_id, date, period, subject, status, faculty_id) VALUES

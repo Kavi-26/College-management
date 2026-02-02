@@ -17,7 +17,8 @@ const TimetableModal = ({ isOpen, onClose, onSave, onDelete, initialData, depart
         year: 'III',
         section: 'A',
         room_no: 'LH-101',
-        type: 'Regular'
+        type: 'Regular',
+        period: 1
     });
 
     // Fetch subjects and rooms
@@ -61,7 +62,8 @@ const TimetableModal = ({ isOpen, onClose, onSave, onDelete, initialData, depart
                 year: 'III',
                 section: 'A',
                 room_no: rooms.length > 0 ? rooms[0].room_no : 'LH-101',
-                type: 'Regular'
+                type: 'Regular',
+                period: 1
             });
         }
     }, [initialData, facultyList, departments, rooms]);
@@ -97,6 +99,30 @@ const TimetableModal = ({ isOpen, onClose, onSave, onDelete, initialData, depart
                             >
                                 <option value="Regular">Regular</option>
                                 <option value="Lab">Lab</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Period (1-6)</label>
+                            <select
+                                value={formData.period || 1}
+                                onChange={e => {
+                                    const p = parseInt(e.target.value);
+                                    let start = "09:00";
+                                    let end = "10:00";
+                                    if (p === 1) { start = "09:00"; end = "10:00"; }
+                                    if (p === 2) { start = "10:00"; end = "11:00"; }
+                                    if (p === 3) { start = "11:15"; end = "12:15"; }
+                                    if (p === 4) { start = "12:15"; end = "13:15"; }
+                                    if (p === 5) { start = "14:00"; end = "15:00"; }
+                                    if (p === 6) { start = "15:00"; end = "16:00"; }
+
+                                    setFormData({ ...formData, period: p, start_time: start, end_time: end });
+                                }}
+                            >
+                                {[1, 2, 3, 4, 5, 6].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                         </div>
                     </div>

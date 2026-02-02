@@ -109,7 +109,7 @@ exports.getDailyReport = async (req, res) => {
             const studentRecords = records.filter(r => r.student_id === student.id);
             const periods = {};
             // Initialize 1-5 as 'Not Marked' or null
-            for (let i = 1; i <= 5; i++) periods[i] = '-';
+            for (let i = 1; i <= 6; i++) periods[i] = '-';
 
             studentRecords.forEach(r => {
                 periods[r.period] = r.status;

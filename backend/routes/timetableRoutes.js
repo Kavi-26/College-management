@@ -5,6 +5,7 @@ const auth = require('../middleware/authMiddleware');
 
 // Public/Protected: Get Timetable (Class View)
 router.get('/', auth, timetableController.getTimetable);
+router.get('/get-subject', auth, timetableController.getSubjectForPeriod);
 
 // Faculty: Get Personal Timetable
 router.get('/my-timetable', auth, timetableController.getMyTimetable);

@@ -72,21 +72,21 @@ exports.getMyTimetable = async (req, res) => {
 
 // Add/Update Timetable Entry (Admin Only)
 exports.upsertTimetableEntry = async (req, res) => {
-    const { day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no, type, id } = req.body;
+    const { day_of_week, period, start_time, end_time, subject, faculty_id, department, year, section, room_no, type, id } = req.body;
 
     try {
         if (id) {
             // Update existing
             await db.query(
-                'UPDATE timetable SET day_of_week=?, start_time=?, end_time=?, subject=?, faculty_id=?, department=?, year=?, section=?, room_no=?, type=? WHERE id=?',
-                [day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no, type || 'Regular', id]
+                'UPDATE timetable SET day_of_week=?, period=?, start_time=?, end_time=?, subject=?, faculty_id=?, department=?, year=?, section=?, room_no=?, type=? WHERE id=?',
+                [day_of_week, period, start_time, end_time, subject, faculty_id, department, year, section, room_no, type || 'Regular', id]
             );
             res.json({ message: 'Entry updated' });
         } else {
             // Insert new
             await db.query(
-                'INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no, type || 'Regular']
+                'INSERT INTO timetable (day_of_week, period, start_time, end_time, subject, faculty_id, department, year, section, room_no, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [day_of_week, period, start_time, end_time, subject, faculty_id, department, year, section, room_no, type || 'Regular']
             );
             res.json({ message: 'Entry added' });
         }
@@ -102,6 +102,24 @@ exports.deleteTimetableEntry = async (req, res) => {
     try {
         await db.query('DELETE FROM timetable WHERE id = ?', [id]);
         res.json({ message: 'Entry deleted' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+// Get Subject for Specific Period (Auto-fill)
+exports.getSubjectForPeriod = async (req, res) => {
+    const { department, year, section, day, period } = req.query;
+    try {
+        const [rows] = await db.query(
+            'SELECT subject FROM timetable WHERE department=? AND year=? AND section=? AND day_of_week=? AND period=?',
+            [department, year, section, day, period]
+        );
+        if (rows.length > 0) {
+            res.json({ subject: rows[0].subject });
+        } else {
+            res.json({ subject: '' });
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
