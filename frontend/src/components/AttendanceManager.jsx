@@ -7,7 +7,7 @@ const AttendanceManager = () => {
 
     // Form States
     const today = new Date().toISOString().split('T')[0];
-    const [markDate] = useState(today); // Locked to today
+    const [markDate, setMarkDate] = useState(today); // Flexible for Admin
     const [reportDate, setReportDate] = useState(today); // Flexible for reports
 
     const [period, setPeriod] = useState('1');
@@ -22,6 +22,8 @@ const AttendanceManager = () => {
     const [reportData, setReportData] = useState([]);
 
     const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdmin = user.role === 'admin';
 
     // Fetch Students for Marking (Check transparency)
     const fetchStudents = async () => {
@@ -54,7 +56,7 @@ const AttendanceManager = () => {
 
     // Toggle Attendance Status
     const toggleStatus = (id) => {
-        if (isTaken) return; // Prevent editing if already taken
+        if (!isAdmin && isTaken) return; // Prevent editing if already taken (unless Admin)
         setStudents(students.map(s =>
             s.id === id ? { ...s, status: s.status === 'Present' ? 'Absent' : 'Present' } : s
         ));
@@ -62,7 +64,8 @@ const AttendanceManager = () => {
 
     // Submit Attendance
     const handleSubmit = async () => {
-        if (isTaken) return; // double check
+        if (!isAdmin && isTaken) return; // double check
+
 
         if (!periodSubject) {
             setMessage('Please enter a subject.');
@@ -141,8 +144,9 @@ const AttendanceManager = () => {
                         <input
                             type="date"
                             value={markDate}
-                            disabled={true}
-                            title="You can only mark attendance for today"
+                            onChange={(e) => setMarkDate(e.target.value)}
+                            disabled={!isAdmin}
+                            title={isAdmin ? "Select date" : "You can only mark attendance for today"}
                         />
                     ) : (
                         <input
@@ -156,8 +160,6 @@ const AttendanceManager = () => {
                     <label>Department</label>
                     <select value={department} onChange={(e) => setDepartment(e.target.value)}>
                         <option value="BCA">BCA</option>
-                        <option value="MCA">MCA</option>
-                        <option value="CSE">CSE</option>
                     </select>
                 </div>
                 <div className="control-group">
@@ -166,7 +168,6 @@ const AttendanceManager = () => {
                         <option value="I">I</option>
                         <option value="II">II</option>
                         <option value="III">III</option>
-                        <option value="IV">IV</option>
                     </select>
                 </div>
                 <div className="control-group">
@@ -180,14 +181,14 @@ const AttendanceManager = () => {
                 {activeTab === 'mark' && (
                     <>
                         <div className="control-group">
-                            <label>Period (1-5)</label>
+                            <label>Period (1-6)</label>
                             <select value={period} onChange={(e) => {
                                 setPeriod(e.target.value);
                                 setStudents([]); // Clear list on period change to force fetch
                                 setIsTaken(false);
                                 setMessage('');
                             }}>
-                                {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>{p}</option>)}
+                                {[1, 2, 3, 4, 5, 6].map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                         </div>
                         <div className="control-group">
@@ -230,17 +231,17 @@ const AttendanceManager = () => {
                             <button
                                 className={`status-toggle ${student.status ? student.status.toLowerCase() : 'present'}`}
                                 onClick={() => toggleStatus(student.id)}
-                                disabled={isTaken}
-                                style={{ opacity: isTaken ? 0.7 : 1, cursor: isTaken ? 'not-allowed' : 'pointer' }}
+                                disabled={!isAdmin && isTaken}
+                                style={{ opacity: (!isAdmin && isTaken) ? 0.7 : 1, cursor: (!isAdmin && isTaken) ? 'not-allowed' : 'pointer' }}
                             >
                                 {student.status || 'Present'}
                             </button>
                         </div>
                     ))}
-                    {!isTaken && (
+                    {(!isTaken || isAdmin) && (
                         <div className="actions">
                             <button className="submit-btn" onClick={handleSubmit} disabled={loading}>
-                                {loading ? 'Saving...' : 'Submit Attendance'}
+                                {loading ? 'Saving...' : (isTaken ? 'Update Attendance' : 'Submit Attendance')}
                             </button>
                         </div>
                     )}
@@ -269,7 +270,7 @@ const AttendanceManager = () => {
                                     <tr key={student.id}>
                                         <td>{student.name}</td>
                                         <td>{student.reg_no}</td>
-                                        {[1, 2, 3, 4, 5].map(p => (
+                                        {[1, 2, 3, 4, 5, 6].map(p => (
                                             <td key={p} className={`status-s ${student.periods[p].toLowerCase()}`}>
                                                 {student.periods[p] === 'Present' ? 'P' : student.periods[p] === 'Absent' ? 'A' : '-'}
                                             </td>

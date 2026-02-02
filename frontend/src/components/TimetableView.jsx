@@ -198,12 +198,10 @@ const TimetableView = () => {
 
             if (i < sorted.length - 1) {
                 const currentEnd = sorted[i].end_time; // HH:MM:SS
-                if (currentEnd.startsWith('10:40')) {
-                    fullSchedule.push({ type: 'break', name: 'Morning Break', start: '10:40', end: '10:55', icon: '☕' });
-                } else if (currentEnd.startsWith('12:35')) {
-                    fullSchedule.push({ type: 'break', name: 'Lunch Break', start: '12:35', end: '13:25', icon: '🍱' });
-                } else if (currentEnd.startsWith('15:05')) {
-                    fullSchedule.push({ type: 'break', name: 'Afternoon Break', start: '15:05', end: '15:20', icon: '🥤' });
+                if (currentEnd.startsWith('11:00')) {
+                    fullSchedule.push({ type: 'break', name: 'Morning Break', start: '11:00', end: '11:15', icon: '☕' });
+                } else if (currentEnd.startsWith('13:15')) {
+                    fullSchedule.push({ type: 'break', name: 'Lunch Break', start: '13:15', end: '14:00', icon: '🍱' });
                 }
             }
         }
