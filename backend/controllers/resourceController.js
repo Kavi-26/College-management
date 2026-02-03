@@ -40,9 +40,9 @@ exports.getResources = async (req, res) => {
         const { department, year, subject_code } = req.query;
         // Basic filtering
         let query = `
-            SELECT r.*, u.name as faculty_name 
+            SELECT r.*, f.name as faculty_name 
             FROM resources r
-            JOIN users u ON r.uploaded_by = u.id
+            LEFT JOIN faculty f ON r.uploaded_by = f.id
             WHERE 1=1
         `;
         const params = [];

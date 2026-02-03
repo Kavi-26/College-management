@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS faculty (
     password VARCHAR(255) NOT NULL,
     department VARCHAR(100) NOT NULL,
     designation VARCHAR(100),
+    subject_handled VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -129,12 +130,12 @@ INSERT INTO admin (name, email, password) VALUES
 ('Principal Admin', 'admin@college.edu', 'admin123');
 
 -- Faculty (BCA ONLY)
-INSERT INTO faculty (id, name, email, password, department, designation) VALUES
-(1, 'Dr. Arun Kumar', 'arun.bca@college.edu', '123456', 'BCA', 'HOD'),
-(2, 'Prof. Priya Sharma', 'priya.bca@college.edu', '123456', 'BCA', 'Assistant Professor'),
-(3, 'Prof. Rajesh Singh', 'rajesh.bca@college.edu', '123456', 'BCA', 'Assistant Professor'),
-(4, 'Prof. Sneha Gupta', 'sneha.bca@college.edu', '123456', 'BCA', 'Associate Professor'),
-(5, 'Prof. Kavita Reddy', 'kavita.bca@college.edu', '123456', 'BCA', 'Lab Instructor');
+INSERT INTO faculty (id, name, email, password, department, designation, subject_handled) VALUES
+(1, 'Dr. Arun Kumar', 'arun.bca@college.edu', '123456', 'BCA', 'HOD', 'Web Programming'),
+(2, 'Prof. Priya Sharma', 'priya.bca@college.edu', '123456', 'BCA', 'Assistant Professor', 'Database Management'),
+(3, 'Prof. Rajesh Singh', 'rajesh.bca@college.edu', '123456', 'BCA', 'Assistant Professor', 'Mathematics'),
+(4, 'Prof. Sneha Gupta', 'sneha.bca@college.edu', '123456', 'BCA', 'Associate Professor', 'Cloud Computing'),
+(5, 'Prof. Kavita Reddy', 'kavita.bca@college.edu', '123456', 'BCA', 'Lab Instructor', 'Web Programming Lab, DBMS Lab');
 
 -- Students (BCA ONLY)
 INSERT INTO students (name, email, password, reg_no, department, year, section) VALUES
@@ -186,7 +187,37 @@ INSERT INTO timetable (day_of_week, period, start_time, end_time, subject, facul
 ('Monday', 3, '11:15:00', '12:15:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),         -- Faculty 3 (Rajesh)
 ('Monday', 4, '12:15:00', '13:15:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),     -- Faculty 4 (Sneha)
 ('Monday', 5, '14:00:00', '15:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),  -- Faculty 5 (Kavita)
-('Monday', 6, '15:00:00', '16:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1');  -- Faculty 5 (Kavita)
+('Monday', 6, '15:00:00', '16:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),
+('Tuesday', 1, '09:00:00', '10:00:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),
+('Tuesday', 2, '10:00:00', '11:00:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),
+('Tuesday', 3, '11:15:00', '12:15:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'),
+('Tuesday', 4, '12:15:00', '13:15:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),
+('Tuesday', 5, '14:00:00', '15:00:00', 'DBMS Lab', 5, 'BCA', 'III', 'A', 'LAB-2'),
+('Tuesday', 6, '15:00:00', '16:00:00', 'DBMS Lab', 5, 'BCA', 'III', 'A', 'LAB-2'),
+('Wednesday', 1, '09:00:00', '10:00:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),
+('Wednesday', 2, '10:00:00', '11:00:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),
+('Wednesday', 3, '11:15:00', '12:15:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),
+('Wednesday', 4, '12:15:00', '13:15:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'),
+('Wednesday', 5, '14:00:00', '15:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),
+('Wednesday', 6, '15:00:00', '16:00:00', 'Web Programming Lab', 5, 'BCA', 'III', 'A', 'LAB-1'),
+('Thursday', 1, '09:00:00', '10:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'),
+('Thursday', 2, '10:00:00', '11:00:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),
+('Thursday', 3, '11:15:00', '12:15:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),
+('Thursday', 4, '12:15:00', '13:15:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),
+('Thursday', 5, '14:00:00', '15:00:00', 'DBMS Lab', 5, 'BCA', 'III', 'A', 'LAB-2'),
+('Thursday', 6, '15:00:00', '16:00:00', 'DBMS Lab', 5, 'BCA', 'III', 'A', 'LAB-2'),
+('Friday', 1, '09:00:00', '10:00:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),
+('Friday', 2, '10:00:00', '11:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'),
+('Friday', 3, '11:15:00', '12:15:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),
+('Friday', 4, '12:15:00', '13:15:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),
+('Friday', 5, '14:00:00', '15:00:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),
+('Friday', 6, '15:00:00', '16:00:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),
+('Saturday', 1, '09:00:00', '10:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101'),
+('Saturday', 2, '10:00:00', '11:00:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),
+('Saturday', 3, '11:15:00', '12:15:00', 'Cloud Computing', 4, 'BCA', 'III', 'A', 'LH-101'),
+('Saturday', 4, '12:15:00', '13:15:00', 'Web Programming', 1, 'BCA', 'III', 'A', 'LH-101'),
+('Saturday', 5, '14:00:00', '15:00:00', 'Mathematics', 3, 'BCA', 'III', 'A', 'LH-101'),
+('Saturday', 6, '15:00:00', '16:00:00', 'Database Management', 2, 'BCA', 'III', 'A', 'LH-101');
 
 -- Seed Attendance
 INSERT INTO attendance (student_id, date, period, subject, status, faculty_id) VALUES
@@ -242,9 +273,12 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- Seed Notices
-INSERT INTO notices (title, content, type, target_audience, posted_by_id, posted_by_name, posted_by_role) VALUES
-('Mid-Semester Exams', 'Mid-sem exams start from next Monday.', 'Exam', 'Student', 1, 'Principal Admin', 'admin'),
-('Technical Seminar', 'A seminar on AI is arranged for BCA III year.', 'Event', 'Student', 2, 'Prof. Priya Sharma', 'faculty');
+INSERT INTO notices (title, content, type, target_audience, posted_by_id, posted_by_name, posted_by_role, is_pinned) VALUES
+('Mid-Semester Exams', 'Mid-sem exams start from next Monday. Please collect your admit cards from the office.', 'Exam', 'Student', 1, 'Principal Admin', 'admin', TRUE),
+('Technical Seminar', 'A seminar on AI is arranged for BCA III year on Friday at 2 PM in the details auditorium.', 'Event', 'Student', 2, 'Prof. Priya Sharma', 'faculty', FALSE),
+('Holiday Declaration', 'The college will remain closed on Wednesday due to a public holiday.', 'Holiday', 'All', 1, 'Principal Admin', 'admin', TRUE),
+('Library Book Return', 'All students are requested to return borrowed books before the semester end.', 'General', 'Student', 1, 'Librarian', 'admin', FALSE),
+('Faculty Meeting', 'Urgent faculty meeting scheduled for tomorrow at 10 AM in the Conference Room.', 'General', 'Faculty', 1, 'Principal Admin', 'admin', TRUE);
 
 
 -- ==========================================
@@ -277,7 +311,10 @@ CREATE TABLE IF NOT EXISTS event_registrations (
 
 -- Seed Events
 INSERT INTO events (title, description, date, location, organizer, created_by) VALUES
-('Tech Symposium 2026', 'Annual tech fest.', '2026-03-15 10:00:00', 'Main Auditorium', 'BCA Department', 1);
+('Tech Symposium 2026', 'Annual tech fest showcasing student projects and competitions.', '2026-03-15 10:00:00', 'Main Auditorium', 'BCA Department', 1),
+('Career Guidance Workshop', 'A workshop on career opportunities in IT for final year students.', '2026-03-20 14:00:00', 'Seminar Hall', 'Placement Cell', 1),
+('Sports Day 2026', 'Inter-departmental sports competitions including Cricket, Football, and Athletics.', '2026-04-10 09:00:00', 'College Ground', 'Sports Department', 1),
+('Cultural Fest', 'A day of music, dance, and cultural performances by students.', '2026-04-25 17:00:00', 'Open Air Theatre', 'Cultural Committee', 1);
 
 
 -- ==========================================

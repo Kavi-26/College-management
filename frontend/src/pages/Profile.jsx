@@ -15,7 +15,7 @@ const Profile = () => {
                 const token = localStorage.getItem('token');
                 if (!token) return navigate('/login');
 
-                const res = await axios.get('http://localhost:5000/api/auth/me', {
+                const res = await axios.get('http://localhost:5000/api/auth/user', {
                     headers: { 'x-auth-token': token }
                 });
                 setUser(res.data);

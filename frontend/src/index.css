@@ -1,23 +1,44 @@
 :root {
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --bg-color: #f3f4f6;
-  --text-color: #1f2937;
-  --text-light: #6b7280;
+  --primary-color: #6366f1;
+  /* Indigo 500 */
+  --primary-hover: #4f46e5;
+  /* Indigo 600 */
+  --secondary-color: #ec4899;
+  /* Pink 500 */
+  --accent-color: #8b5cf6;
+  /* Violet 500 */
+  --bg-color: #f8fafc;
+  /* Slate 50 */
+  --text-color: #1e293b;
+  /* Slate 800 */
+  --text-light: #64748b;
+  /* Slate 500 */
   --white: #ffffff;
   --bg-card: #ffffff;
-  --border-color: #e5e7eb;
-  --radius: 8px;
+  --border-color: #e2e8f0;
+  --radius: 12px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
 [data-theme='dark'] {
-  --bg-color: #111827;
-  --text-color: #f9fafb;
-  --text-light: #9ca3af;
-  --white: #1f2937;
-  --bg-card: #1f2937;
-  --border-color: #374151;
-  --bg-input: #374151; 
+  --bg-color: #0f172a;
+  /* Slate 900 */
+  --text-color: #f1f5f9;
+  /* Slate 100 */
+  --text-light: #94a3b8;
+  /* Slate 400 */
+  --white: #1e293b;
+  /* Slate 800 */
+  --bg-card: #1e293b;
+  --border-color: #334155;
+  --bg-input: #334155;
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -28,26 +49,44 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
 /* Global Dark Mode Overrides for Components using direct colors */
-[data-theme='dark'] .sidebar, 
+[data-theme='dark'] .sidebar,
 [data-theme='dark'] .top-bar,
 [data-theme='dark'] .stat-card,
 [data-theme='dark'] .card,
 [data-theme='dark'] .modal-content,
 [data-theme='dark'] .search-results-dropdown {
-    background-color: var(--bg-card) !important;
-    color: var(--text-color);
-    border-color: var(--border-color);
+  background-color: var(--bg-card) !important;
+  color: var(--text-color);
+  border-color: var(--border-color);
 }
 
-[data-theme='dark'] .nav-item { color: var(--text-light); }
-[data-theme='dark'] .nav-item:hover, [data-theme='dark'] .nav-item.active { 
-    background-color: #374151; 
-    color: var(--primary-color);
+[data-theme='dark'] .nav-item {
+  color: var(--text-light);
 }
 
-[data-theme='dark'] input, [data-theme='dark'] select {
-    background-color: #374151;
-    color: white;
-    border-color: #4b5563;
+[data-theme='dark'] .nav-item:hover,
+[data-theme='dark'] .nav-item.active {
+  background-color: #374151;
+  color: var(--primary-color);
+}
+
+[data-theme='dark'] input,
+[data-theme='dark'] select {
+  background-color: #374151;
+  color: white;
+  border-color: #4b5563;
 }

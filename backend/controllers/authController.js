@@ -4,34 +4,6 @@ const jwt = require('jsonwebtoken');
 
 // ... existing code ...
 
-// Change Password
-exports.changePassword = async (req, res) => {
-    try {
-        const { currentPassword, newPassword } = req.body;
-        const userId = req.user.id;
-
-        // Get user
-        const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
-        const user = users[0];
-
-        // Verify current password
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid current password' });
-        }
-
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        const removePassword = await bcrypt.hash(newPassword, salt);
-
-        await db.query('UPDATE users SET password = ? WHERE id = ?', [removePassword, userId]);
-
-        res.json({ message: 'Password updated successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
 
 // Helper: Get table name based on role
 const getTable = (role) => {
