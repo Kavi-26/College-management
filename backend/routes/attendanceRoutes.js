@@ -25,4 +25,8 @@ router.get('/my-daily', auth, attendanceController.getStudentDailyLog);
 // Get Faculty Today Stats
 router.get('/faculty-stats', auth, attendanceController.getFacultyTodayStats);
 
+// Class Reports (Faculty/Admin)
+router.get('/monthly-class-report', auth, attendanceController.getMonthlyClassReport);
+router.get('/yearly-class-report', auth, attendanceController.getYearlyClassReport);
+
 module.exports = router;

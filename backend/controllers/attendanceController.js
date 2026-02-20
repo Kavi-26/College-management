@@ -281,3 +281,116 @@ exports.getStudentDailyLog = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// Get Monthly Class Report (Faculty/Admin - student-wise aggregated for a month)
+exports.getMonthlyClassReport = async (req, res) => {
+    const { month, department, year, section } = req.query; // month: 2026-02
+
+    try {
+        if (!month) return res.status(400).json({ message: 'Month parameter required (YYYY-MM)' });
+
+        // Get all students in the class
+        const [students] = await db.query(
+            'SELECT id, name, reg_no FROM students WHERE department = ? AND year = ? AND section = ? ORDER BY reg_no',
+            [department, year, section]
+        );
+
+        // Get attendance counts per student for this month
+        const [records] = await db.query(`
+            SELECT 
+                a.student_id,
+                COUNT(*) as total,
+                SUM(CASE WHEN a.status = 'Present' OR a.status = 'On Duty' THEN 1 ELSE 0 END) as present
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE s.department = ? AND s.year = ? AND s.section = ?
+                AND DATE_FORMAT(a.date, '%Y-%m') = ?
+            GROUP BY a.student_id
+        `, [department, year, section, month]);
+
+        // Build report
+        const recordMap = {};
+        records.forEach(r => { recordMap[r.student_id] = r; });
+
+        const report = students.map(s => {
+            const data = recordMap[s.id] || { total: 0, present: 0 };
+            return {
+                ...s,
+                total: data.total,
+                present: data.present,
+                absent: data.total - data.present,
+                percentage: data.total === 0 ? 0 : ((data.present / data.total) * 100).toFixed(1)
+            };
+        });
+
+        res.json(report);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get Yearly Class Report (Faculty/Admin - student-wise aggregate for entire year)
+exports.getYearlyClassReport = async (req, res) => {
+    const { calendarYear, department, year, section } = req.query;
+
+    try {
+        const yearFilter = calendarYear ? `AND YEAR(a.date) = ?` : '';
+        const baseParams = [department, year, section];
+        const params = calendarYear ? [...baseParams, calendarYear] : baseParams;
+
+        const [students] = await db.query(
+            'SELECT id, name, reg_no FROM students WHERE department = ? AND year = ? AND section = ? ORDER BY reg_no',
+            [department, year, section]
+        );
+
+        const [records] = await db.query(`
+            SELECT 
+                a.student_id,
+                a.subject,
+                COUNT(*) as total,
+                SUM(CASE WHEN a.status = 'Present' OR a.status = 'On Duty' THEN 1 ELSE 0 END) as present
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE s.department = ? AND s.year = ? AND s.section = ? ${yearFilter}
+            GROUP BY a.student_id, a.subject
+        `, params);
+
+        // Group by student
+        const studentMap = {};
+        records.forEach(r => {
+            if (!studentMap[r.student_id]) {
+                studentMap[r.student_id] = { subjects: {}, total: 0, present: 0 };
+            }
+            studentMap[r.student_id].subjects[r.subject] = {
+                total: r.total,
+                present: r.present,
+                percentage: r.total === 0 ? 0 : ((r.present / r.total) * 100).toFixed(1)
+            };
+            studentMap[r.student_id].total += r.total;
+            studentMap[r.student_id].present += r.present;
+        });
+
+        const report = students.map(s => {
+            const data = studentMap[s.id] || { total: 0, present: 0, subjects: {} };
+            return {
+                ...s,
+                total: data.total,
+                present: data.present,
+                absent: data.total - data.present,
+                percentage: data.total === 0 ? 0 : ((data.present / data.total) * 100).toFixed(1),
+                subjects: data.subjects
+            };
+        });
+
+        // Get list of all unique subjects
+        const allSubjects = [...new Set(records.map(r => r.subject))];
+
+        res.json({ report, subjects: allSubjects });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
