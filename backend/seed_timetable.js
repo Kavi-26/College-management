@@ -109,9 +109,9 @@ async function seedTimetable() {
                 // Admin can merge slots later if needed (complex UI), for now distinct blocks.
 
                 await connection.query(`
-                    INSERT INTO timetable (day_of_week, start_time, end_time, subject, faculty_id, department, year, section, room_no, type)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [day, start, end, alloc.name, facultyId, 'BCA', 'III', 'A', 'LH-101', alloc.type]);
+                    INSERT INTO timetable (day_of_week, period, start_time, end_time, subject, faculty_id, department, year, section, room_no, type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [day, i + 1, start, end, alloc.name, facultyId, 'BCA', 'III', 'A', alloc.type === 'Lab' ? 'LAB-1' : 'LH-101', alloc.type]);
             }
         }
 
