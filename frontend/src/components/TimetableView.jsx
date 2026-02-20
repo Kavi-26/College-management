@@ -56,9 +56,22 @@ const TimetableView = () => {
     // Set defaults
     useEffect(() => {
         if (user.role === 'student') {
-            setDepartment(user.department);
-            setYear(user.year);
-            setSection(user.section);
+            // Fetch fresh user data to ensure year/section are up to date
+            fetch('http://localhost:5000/api/auth/user', {
+                headers: { 'x-auth-token': token }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.year) setYear(data.year);
+                    if (data.department) setDepartment(data.department);
+                    if (data.section) setSection(data.section);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch fresh user data, using local storage fallback", err);
+                    setDepartment(user.department);
+                    setYear(user.year);
+                    setSection(user.section);
+                });
         } else if (user.role === 'faculty') {
             setDepartment(user.department);
             setViewMode('personal'); // Default to personal for faculty
