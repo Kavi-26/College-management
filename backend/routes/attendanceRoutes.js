@@ -15,6 +15,12 @@ router.get('/daily-report', auth, attendanceController.getDailyReport);
 // Get Student Stats (Own)
 router.get('/my-stats', auth, attendanceController.getStudentStats);
 
+// Get Student Monthly Breakdown
+router.get('/my-monthly', auth, attendanceController.getStudentMonthlyStats);
+
+// Get Student Daily Log
+router.get('/my-daily', auth, attendanceController.getStudentDailyLog);
+
 
 // Get Faculty Today Stats
 router.get('/faculty-stats', auth, attendanceController.getFacultyTodayStats);

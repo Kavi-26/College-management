@@ -202,3 +202,82 @@ exports.getStudentStats = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// Get Student Monthly Breakdown (Month-wise attendance for the year)
+exports.getStudentMonthlyStats = async (req, res) => {
+    const studentId = req.user.id;
+    const { year } = req.query; // calendar year, e.g. 2026
+
+    try {
+        const yearFilter = year ? `AND YEAR(date) = ?` : '';
+        const params = year ? [studentId, year] : [studentId];
+
+        const [records] = await db.query(`
+            SELECT 
+                DATE_FORMAT(date, '%Y-%m') as month,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'Present' OR status = 'On Duty' THEN 1 ELSE 0 END) as present
+            FROM attendance 
+            WHERE student_id = ? ${yearFilter}
+            GROUP BY DATE_FORMAT(date, '%Y-%m')
+            ORDER BY month
+        `, params);
+
+        const monthly = records.map(r => ({
+            month: r.month,
+            total: r.total,
+            present: r.present,
+            absent: r.total - r.present,
+            percentage: r.total === 0 ? 0 : ((r.present / r.total) * 100).toFixed(1)
+        }));
+
+        res.json(monthly);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get Student Daily Attendance Log (Day-by-day for a given month)
+exports.getStudentDailyLog = async (req, res) => {
+    const studentId = req.user.id;
+    const { month } = req.query; // format: 2026-02
+
+    try {
+        if (!month) {
+            return res.status(400).json({ message: 'Month parameter is required (YYYY-MM)' });
+        }
+
+        const [records] = await db.query(`
+            SELECT date, period, subject, status
+            FROM attendance 
+            WHERE student_id = ? AND DATE_FORMAT(date, '%Y-%m') = ?
+            ORDER BY date, period
+        `, [studentId, month]);
+
+        // Group by date
+        const dailyMap = {};
+        records.forEach(r => {
+            const dateKey = r.date instanceof Date ? r.date.toISOString().split('T')[0] : r.date;
+            if (!dailyMap[dateKey]) {
+                dailyMap[dateKey] = { date: dateKey, periods: [], present: 0, total: 0 };
+            }
+            dailyMap[dateKey].periods.push({
+                period: r.period,
+                subject: r.subject,
+                status: r.status
+            });
+            dailyMap[dateKey].total++;
+            if (r.status === 'Present' || r.status === 'On Duty') {
+                dailyMap[dateKey].present++;
+            }
+        });
+
+        res.json(Object.values(dailyMap));
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
