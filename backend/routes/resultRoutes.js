@@ -3,8 +3,9 @@ const router = express.Router();
 const resultController = require('../controllers/resultController');
 const auth = require('../middleware/authMiddleware');
 
-// Student Route
+// Student Routes
 router.get('/my-results', auth, resultController.getMyResults);
+router.post('/student-submission', auth, resultController.saveStudentMarks);
 
 // Faculty/Admin Routes
 router.post('/', auth, resultController.addResult);

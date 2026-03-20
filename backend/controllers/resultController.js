@@ -34,6 +34,37 @@ exports.addResult = async (req, res) => {
     }
 };
 
+// Student saves their own marks (CAT, Assessment, Semester)
+exports.saveStudentMarks = async (req, res) => {
+    try {
+        const student_id = req.user.id;
+        const { subject_code, semester, cat_marks, assessment_marks, semester_marks } = req.body;
+
+        // Calculate total and grade if needed, or just store.
+        // Usually Assessment(20) + CAT(30) + Semester(50) = 100
+        const total = parseFloat(cat_marks || 0) + parseFloat(assessment_marks || 0) + parseFloat(semester_marks || 0);
+        const grade = calculateGrade(total);
+
+        const query = `
+            INSERT INTO results (student_id, subject_code, semester, exam_type, cat_marks, assessment_marks, semester_marks, marks_obtained, grade, is_student_added)
+            VALUES (?, ?, ?, 'Self', ?, ?, ?, ?, ?, TRUE)
+            ON DUPLICATE KEY UPDATE 
+                cat_marks = VALUES(cat_marks), 
+                assessment_marks = VALUES(assessment_marks), 
+                semester_marks = VALUES(semester_marks),
+                marks_obtained = VALUES(marks_obtained),
+                grade = VALUES(grade)
+        `;
+
+        await db.query(query, [student_id, subject_code, semester, cat_marks, assessment_marks, semester_marks, total, grade]);
+
+        res.json({ message: 'Marks recorded successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Bulk Add Results (Array of objects)
 exports.bulkAddResults = async (req, res) => {
     try {
@@ -72,7 +103,7 @@ exports.getMyResults = async (req, res) => {
             FROM results r
             LEFT JOIN subjects s ON r.subject_code = s.code
             WHERE r.student_id = ?
-            ORDER BY r.published_at DESC
+            ORDER BY r.semester DESC, r.published_at DESC
         `;
         const [rows] = await db.query(query, [student_id]);
         res.json(rows);

@@ -17,14 +17,20 @@ const ResultView = () => {
 
     // State for Student View
     const [myResults, setMyResults] = useState([]);
+    const [showEntryForm, setShowEntryForm] = useState(false);
+    const [studentMarkEntry, setStudentMarkEntry] = useState({
+        subject_code: '',
+        cat_marks: '',
+        assessment_marks: '',
+        semester_marks: ''
+    });
 
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        fetchReferenceData(); // Both Roles need subjects/depts now
         if (user.role === 'student') {
             fetchMyResults();
-        } else {
-            fetchReferenceData();
         }
     }, []);
 
@@ -116,6 +122,40 @@ const ResultView = () => {
         }
     };
 
+    // Student: Save Marks
+    const handleStudentSaveMarks = async () => {
+        if (!studentMarkEntry.subject_code) return alert('Select a subject');
+        
+        try {
+            const res = await fetch('http://localhost:5000/api/results/student-submission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token
+                },
+                body: JSON.stringify({
+                    subject_code: studentMarkEntry.subject_code,
+                    semester: user.year, // Using student's current year as semester
+                    cat_marks: studentMarkEntry.cat_marks,
+                    assessment_marks: studentMarkEntry.assessment_marks,
+                    semester_marks: studentMarkEntry.semester_marks
+                })
+            });
+
+            if (res.ok) {
+                alert('Marks recorded successfully!');
+                setStudentMarkEntry({ subject_code: '', cat_marks: '', assessment_marks: '', semester_marks: '' });
+                setShowEntryForm(false);
+                fetchMyResults();
+            } else {
+                const errData = await res.json();
+                alert(errData.message || 'Failed to record marks');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     // Student: Fetch My Results
     const fetchMyResults = async () => {
         setLoading(true);
@@ -136,7 +176,56 @@ const ResultView = () => {
     if (user.role === 'student') {
         return (
             <div className="results-container">
-                <h2>🎓 My Results</h2>
+                <div className="header-actions">
+                    <h2>🎓 My Results</h2>
+                    <button className="add-marks-btn" onClick={() => setShowEntryForm(!showEntryForm)}>
+                        {showEntryForm ? 'Close Form' : '+ Add My Marks'}
+                    </button>
+                </div>
+
+                {showEntryForm && (
+                    <div className="student-entry-card">
+                        <h3>Record Your Marks</h3>
+                        <div className="entry-grid">
+                            <div className="entry-group">
+                                <label>Subject</label>
+                                <select 
+                                    value={studentMarkEntry.subject_code} 
+                                    onChange={(e) => setStudentMarkEntry({...studentMarkEntry, subject_code: e.target.value})}
+                                >
+                                    <option value="">Select Subject</option>
+                                    {subjects.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="entry-group">
+                                <label>CAT (30)</label>
+                                <input 
+                                    type="number" max="30" placeholder="0-30"
+                                    value={studentMarkEntry.cat_marks}
+                                    onChange={(e) => setStudentMarkEntry({...studentMarkEntry, cat_marks: e.target.value})}
+                                />
+                            </div>
+                            <div className="entry-group">
+                                <label>Assessment (20)</label>
+                                <input 
+                                    type="number" max="20" placeholder="0-20"
+                                    value={studentMarkEntry.assessment_marks}
+                                    onChange={(e) => setStudentMarkEntry({...studentMarkEntry, assessment_marks: e.target.value})}
+                                />
+                            </div>
+                            <div className="entry-group">
+                                <label>Semester (50)</label>
+                                <input 
+                                    type="number" max="50" placeholder="0-50"
+                                    value={studentMarkEntry.semester_marks}
+                                    onChange={(e) => setStudentMarkEntry({...studentMarkEntry, semester_marks: e.target.value})}
+                                />
+                            </div>
+                            <button className="submit-entry-btn" onClick={handleStudentSaveMarks}>Save Marks</button>
+                        </div>
+                    </div>
+                )}
+
                 {loading ? <p>Loading...</p> : (
                     <div className="results-grid">
                         {myResults.length > 0 ? (
@@ -144,20 +233,29 @@ const ResultView = () => {
                                 <thead>
                                     <tr>
                                         <th>Subject</th>
+                                        <th>Semester</th>
+                                        <th>CAT</th>
+                                        <th>Assessment</th>
                                         <th>Exam</th>
-                                        <th>Marks</th>
+                                        <th>Total</th>
                                         <th>Grade</th>
-                                        <th>Result</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {myResults.map(res => (
                                         <tr key={res.id}>
-                                            <td>{res.subject_name} ({res.subject_code})</td>
-                                            <td>{res.exam_type}</td>
-                                            <td>{res.marks_obtained} / {res.max_marks}</td>
+                                            <td>
+                                                <div className="subj-info">
+                                                    <span className="subj-name">{res.subject_name}</span>
+                                                    <span className="subj-code">{res.subject_code}</span>
+                                                </div>
+                                            </td>
+                                            <td>{res.semester}</td>
+                                            <td>{res.cat_marks}</td>
+                                            <td>{res.assessment_marks}</td>
+                                            <td>{res.semester_marks || res.marks_obtained}</td>
+                                            <td><strong>{res.marks_obtained}</strong></td>
                                             <td><span className={`grade-badge grade-${res.grade}`}>{res.grade}</span></td>
-                                            <td>{res.grade === 'F' ? 'FAIL' : 'PASS'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -168,9 +266,24 @@ const ResultView = () => {
                     </div>
                 )}
                 <style>{`
+                    .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+                    .add-marks-btn { background: var(--primary-color); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
+                    
+                    .student-entry-card { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
+                    .student-entry-card h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #374151; }
+                    .entry-grid { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+                    .entry-group { display: flex; flex-direction: column; gap: 0.4rem; }
+                    .entry-group label { font-size: 0.85rem; font-weight: 600; color: #6b7280; }
+                    .entry-group input, .entry-group select { padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; }
+                    .submit-entry-btn { background: #10b981; color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 700; height: 40px; }
+
                     .results-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
                     .results-table th, .results-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-                    .results-table th { background: #f9fafb; font-weight: 600; color: #374151; }
+                    .results-table th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 0.9rem; }
+                    .subj-info { display: flex; flex-direction: column; }
+                    .subj-name { font-weight: 600; color: #111827; }
+                    .subj-code { font-size: 0.75rem; color: #6b7280; }
+                    
                     .grade-badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 700; font-size: 0.85rem; }
                     .grade-O, .grade-A\+, .grade-A { background: #dcfce7; color: #166534; }
                     .grade-B, .grade-C, .grade-P { background: #dbeafe; color: #1e40af; }
@@ -249,6 +362,29 @@ const ResultView = () => {
             )}
 
             <style>{`
+                .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+                .add-marks-btn { background: var(--primary-color); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
+                
+                .student-entry-card { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
+                .student-entry-card h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #374151; }
+                .entry-grid { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+                .entry-group { display: flex; flex-direction: column; gap: 0.4rem; }
+                .entry-group label { font-size: 0.85rem; font-weight: 600; color: #6b7280; }
+                .entry-group input, .entry-group select { padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; }
+                .submit-entry-btn { background: #10b981; color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 700; height: 40px; }
+
+                .results-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+                .results-table th, .results-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+                .results-table th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 0.9rem; }
+                .subj-info { display: flex; flex-direction: column; }
+                .subj-name { font-weight: 600; color: #111827; }
+                .subj-code { font-size: 0.75rem; color: #6b7280; }
+                
+                .grade-badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 700; font-size: 0.85rem; }
+                .grade-O, .grade-A\+, .grade-A { background: #dcfce7; color: #166534; }
+                .grade-B, .grade-C, .grade-P { background: #dbeafe; color: #1e40af; }
+                .grade-F { background: #fee2e2; color: #991b1b; }
+
                 .filters-card { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
                 .filter-row, .exam-details-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
                 select { padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; min-width: 150px; }
