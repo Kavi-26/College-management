@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 const socket = io.connect("http://localhost:5000");
 
 const ChatView = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
     const token = localStorage.getItem('token');
 
     // Room Logic: 
@@ -18,15 +18,46 @@ const ChatView = () => {
     const bottomRef = useRef(null);
 
     useEffect(() => {
+        const fetchUserData = async () => {
+            if (user.role === 'student' && (!user.year || !user.section)) {
+                try {
+                    const res = await fetch('http://localhost:5000/api/auth/user', {
+                        headers: { 'x-auth-token': token }
+                    });
+                    const data = await res.json();
+                    // Update the local user object for this component's state if we had it in state,
+                    // but here we just need to trigger a re-render or re-set the room.
+                    if (data.year && data.section) {
+                        const newRoom = `${data.department}-${data.year}-${data.section}`;
+                        setRoom(newRoom);
+                        socket.emit("join_room", newRoom);
+                        fetchHistory(newRoom);
+                        // Update state and localStorage
+                        const updatedUser = { ...user, ...data };
+                        setUser(updatedUser);
+                        localStorage.setItem('user', JSON.stringify(updatedUser));
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch fresh user data", err);
+                }
+            }
+        };
+
         if (user.role === 'student') {
-            const studentRoom = `${user.department}-${user.year}-${user.section}`;
-            setRoom(studentRoom);
-            if (studentRoom !== "") {
+            const department = user.department || 'BCA';
+            const year = user.year;
+            const section = user.section;
+
+            if (!year || !section) {
+                setRoom(`${department}-Unknown`);
+                fetchUserData();
+            } else {
+                const studentRoom = `${department}-${year}-${section}`;
+                setRoom(studentRoom);
                 socket.emit("join_room", studentRoom);
                 fetchHistory(studentRoom);
             }
         } else {
-            // Default room for faculty for now
             const defaultRoom = 'BCA-III-A';
             setRoom(defaultRoom);
             socket.emit("join_room", defaultRoom);
@@ -81,7 +112,7 @@ const ChatView = () => {
                 sender_role: user.role,
                 text: currentMessage, // for DB
                 message: currentMessage, // for UI
-                time: new Date(toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
 
             await socket.emit("send_message", messageData);
@@ -105,7 +136,9 @@ const ChatView = () => {
         <div className="chat-container">
             <div className="chat-header">
                 <h3>💬 Community Chat</h3>
-                <span className="room-badge">Room: {room}</span>
+                <div className="header-meta">
+                    <span className="room-badge">Room: {room}</span>
+                </div>
             </div>
 
             <div className="chat-body">
@@ -151,6 +184,7 @@ const ChatView = () => {
                     display: flex; justify-content: space-between; align-items: center;
                 }
                 .chat-header h3 { margin: 0; font-size: 1.2rem; }
+                .header-meta { display: flex; align-items: center; gap: 0.5rem; }
                 .room-badge { background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.9rem; }
                 
                 .chat-body {

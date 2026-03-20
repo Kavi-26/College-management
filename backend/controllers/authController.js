@@ -119,7 +119,10 @@ exports.login = async (req, res) => {
                         name: user.name,
                         role: role,
                         reg_no: user.reg_no,
-                        department: user.department
+                        department: user.department,
+                        year: user.year,
+                        section: user.section,
+                        designation: user.designation
                     }
                 });
             }
